@@ -11,6 +11,8 @@ TARGET	= mystorm
 CPP	= mystorm.cpp \
 		main.cpp
 OCDCONFIG = stlink.cfg
+OCD = /Applications/Eclipse.app/Contents/Eclipse/plugins/fr.ac6.mcu.externaltools.openocd.macos64_1.23.0.201904120827/tools/openocd/bin/openocd
+OCDSCRIPTS = /Applications/Eclipse.app/Contents/Eclipse/plugins/fr.ac6.mcu.debug_2.5.0.201904120827/resources/openocd/st_scripts
 
 # default target
 all: elf
@@ -28,6 +30,7 @@ ARCH	= -mcpu=cortex-m7
 
 # uncomment to include debug symbols
 DEBUG	= -g
+OPT	= -Og
 
 # directories
 #OUTPUT_DIR	= $(TARGET)_output
@@ -78,7 +81,7 @@ C_DEFS =  \
 -DUSE_HAL_DRIVER \
 -DSTM32F730xx
 
-GCCPATH = /home/awood/arm-gcc/gcc-arm-none-eabi-8-2018-q4-major/bin
+GCCPATH = /Development/IceCore/gcc-arm-none-eabi-8-2018-q4-major/bin
 
 # toolchain definitions
 CP	= $(GCCPATH)/arm-none-eabi-g++
@@ -91,10 +94,10 @@ ASMFLAGS = -x assembler-with-cpp
 
 CPPFLAGS	= -D$(MCU) $(C_DEFS) $(INCLUDE)
 
-CPFLAGS = -ffunction-sections -fdata-sections -O2 -Wall 
+CPFLAGS = -ffunction-sections -fdata-sections $(OPT) -Wall 
 CPFLAGS += -mthumb $(ARCH) $(FPU) $(DEBUG)
 
-CFLAGS	= -ffunction-sections -fdata-sections -O2 --std=c11 -Wall
+CFLAGS	= -ffunction-sections -fdata-sections $(OPT) --std=c11 -Wall
 #CFLAGS	= -ffunction-sections -fdata-sections -O0 -Werror --std=c11 -Wall
 CFLAGS	+= -mthumb $(ARCH) $(FPU) $(DEBUG)
 
@@ -162,7 +165,7 @@ flash: hex
 	stm32flash -w $(OUTPUT_DIR)/$(TARGET).hex -v -g 0x0 /dev/ttyAMA0
 
 oflash: elf
-	openocd -f $(OCDCONFIG) -c "program $(OUTPUT_DIR)/$(TARGET).elf verify reset exit"
+	$(OCD) -f $(OCDCONFIG) -s $(OCDSCRIPTS) -c "program $(OUTPUT_DIR)/$(TARGET).elf verify reset exit"
 
 dfu: raw
 	dfu-util -s 0x08000000:leave -a 0 -D $(OUTPUT_DIR)/$(TARGET).raw -t 1024

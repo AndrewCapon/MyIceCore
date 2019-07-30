@@ -267,13 +267,16 @@ static int8_t usbcdc_rxcallback(uint8_t *data, uint32_t *len){
 
 	USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &data[0]);
 
-	if(!Ice40.stream(data, *len)){
-		// HAL_UART_Transmit(&huart1, data, *len, HAL_UART_TIMEOUT_VALUE);
-		// mode_led_toggle();
+	if(*len)
+	{
+		if(!Ice40.stream(data, *len)){
+			// HAL_UART_Transmit(&huart1, data, *len, HAL_UART_TIMEOUT_VALUE);
+			// mode_led_toggle();
 
-		HAL_UART_Transmit_DMA(&huart1, data, *len);
-		return USBD_OK;
-		//if(temp) mode_led_low();
+			HAL_UART_Transmit_DMA(&huart1, data, *len);
+			return USBD_OK;
+			//if(temp) mode_led_low();
+		}
 	}
 
 	USBD_CDC_ReceivePacket(&hUsbDeviceFS);
