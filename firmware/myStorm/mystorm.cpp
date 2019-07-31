@@ -31,6 +31,8 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+//#define TIMINGS
+
 #include "main.h"
 #include "usbd_cdc_if.h"
 #include "stm32f7xx_hal.h"
@@ -91,6 +93,22 @@ public:
 	virtual bool streamData(uint8_t *data, uint32_t len, bool bEndStream);
 	virtual bool init(void);
 
+#ifdef TIMINGS
+	inline bool streamDataInlined(uint8_t *data, uint32_t len, bool bEndStream)
+	{
+		m_uCount+= len;
+		if(bEndStream)
+		{
+			char buffer[128];
+			sprintf(buffer, "%lu bytes received\n", m_uCount);
+			cdc_puts(buffer);
+			return false;
+		}
+		else
+			return true;
+	}
+#endif
+
 private:
 	uint32_t m_uCount;
 };
@@ -109,6 +127,28 @@ class Fpga : public CommandHandler {
 		uint8_t stream(uint8_t *data, uint32_t len);
 		virtual bool streamData(uint8_t *data, uint32_t len, bool bEndStream);
 		virtual bool init(void);
+
+#ifdef TIMINGS
+		inline bool streamDataInlined(uint8_t *data, uint32_t len, bool bEndStream){
+			bool bResult = true;
+
+			nbytes += len;
+			write(data, len);
+
+			if(nbytes >= NBYTES)
+			{
+				if(err = config())
+					status_led_high();
+				else
+					status_led_low();
+				flash_SPI_Enable();
+				bResult = false;
+			}
+
+			return bResult;
+		}
+#endif
+
 };
 
 class Flash : public CommandHandler{
@@ -158,6 +198,15 @@ CommandStream 	g_commandStream;
 /*
  * Setup function (called once at powerup)
  */
+
+#ifdef TIMINGS
+volatile uint32_t uInlineFpgaTime;
+volatile uint32_t uVirtuaFpgalTime;
+volatile uint32_t uInlineCountTime;
+volatile uint32_t uVirtualCountTime;
+volatile uint32_t uStop;
+#endif
+
 void
 setup(void)
 {
@@ -193,6 +242,49 @@ setup(void)
 
 
 	USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+
+
+#ifdef TIMINGS
+	// timings
+	uint8_t buffer[64];
+	CommandHandler *pFpgaHandler = &Ice40;
+	CommandHandler *pCountHandler = &g_count;
+
+	// Fpga commandHandler
+	uint32_t uStartTicks = HAL_GetTick();
+	for(int i=0; i < 1000; i++)
+		Ice40.streamDataInlined(buffer, 64, false);
+
+	uint32_t uInlineFpgaTicks = HAL_GetTick();
+
+	for(int i=0; i < 1000; i++)
+		pFpgaHandler->streamData(buffer, 64, false);
+
+	uint32_t uVirtualFpgaTicks = HAL_GetTick();
+
+
+	// Count command handler
+	for(int i=0; i < 1000; i++)
+			g_count.streamDataInlined(buffer, 64, false);
+
+	uint32_t uInlineCountTicks = HAL_GetTick();
+
+
+	// Count command handler
+	for(int i=0; i < 1000; i++)
+		pCountHandler->streamData(buffer, 64, false);
+
+	uint32_t uVirtualCountTicks = HAL_GetTick();
+
+
+	uInlineFpgaTime = uInlineFpgaTicks-uStartTicks;
+	uVirtuaFpgalTime = uVirtualFpgaTicks-uInlineFpgaTicks;
+
+	uInlineCountTime = uInlineCountTicks - uVirtualFpgaTicks;
+	uVirtualCountTime = uVirtualCountTicks - uInlineCountTicks;
+
+	uStop = 1;
+#endif
 }
 
 
@@ -599,6 +691,7 @@ bool Fpga::streamData(uint8_t *data, uint32_t len, bool bEndStream){
 
 	return bResult;
 }
+
 
 
 Flash::Flash(SPI_HandleTypeDef *hspi){

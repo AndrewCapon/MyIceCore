@@ -30,7 +30,7 @@ ARCH	= -mcpu=cortex-m7
 
 # uncomment to include debug symbols
 DEBUG	= -g
-OPT	= -Og
+OPT	= -O2
 
 # directories
 #OUTPUT_DIR	= $(TARGET)_output
@@ -110,7 +110,7 @@ LDFLAGS += -mthumb $(ARCH) $(FPU) $(DEBUG)
 
 # toolchain recipes
 $(OBJ_DIR)/%.o: %.cpp
-	$(CP) -c $(CPPFLAGS) $(CPFLAGS) $< -o $@
+	$(CP) -fno-rtti -c $(CPPFLAGS) $(CPFLAGS) $< -o $@
 
 $(OBJ_DIR)/%.o: %.c
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) $< -o $@
