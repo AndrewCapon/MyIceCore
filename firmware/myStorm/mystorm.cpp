@@ -37,6 +37,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "errno.h"
 #include "mystorm.h"
 
+extern "C" void __cxa_pure_virtual() { while (1); }
+
 #ifdef __cplusplus
  extern "C" {
 #endif
@@ -75,7 +77,25 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);
 
 /* Classses */
-class Fpga {
+
+class CommandHandler
+{
+public:
+	virtual bool streamData(uint8_t *data, uint32_t len, bool bEndStream) = 0;
+	virtual bool init(void) = 0;
+};
+
+class Count : public CommandHandler
+{
+public:
+	virtual bool streamData(uint8_t *data, uint32_t len, bool bEndStream);
+	virtual bool init(void);
+
+private:
+	uint32_t m_uCount;
+};
+
+class Fpga : public CommandHandler {
 	uint32_t NBYTES;
 	uint8_t state;
 	uint32_t nbytes;
@@ -87,10 +107,11 @@ class Fpga {
 		uint8_t config(void);
 		uint8_t write(uint8_t *p, uint32_t len);
 		uint8_t stream(uint8_t *data, uint32_t len);
-
+		virtual bool streamData(uint8_t *data, uint32_t len, bool bEndStream);
+		virtual bool init(void);
 };
 
-class Flash {
+class Flash : public CommandHandler{
 	SPI_HandleTypeDef *spi;
 
 	public:
@@ -98,11 +119,41 @@ class Flash {
 	 uint8_t write(uint8_t *p, uint32_t len);
 	 uint8_t read(uint8_t *p, uint32_t len);
 	 uint8_t write_read(uint8_t *tx, uint8_t *rx, uint32_t len);
+ 	 virtual bool streamData(uint8_t *data, uint32_t len, bool bEndStream);
+ 	 virtual bool init(void);
+};
+
+class CommandStream
+{
+public:
+	CommandStream(void)
+	{
+		Init();
+	};
+
+	void Init(void);
+	void AddCommandHandler(uint8_t uCommandByte, CommandHandler *pCommandHandler);
+
+	uint8_t stream(uint8_t *data, uint32_t len);
+
+private:
+	typedef enum { stDetect, stDetectCommandByte, stDispatch, stProcessing, stError } StreamState;
+
+	StreamState m_state;
+
+	uint8_t			m_header[3] = {0x7e, 0xaa, 0x99};
+	uint8_t			m_uHeaderScanPos = 0;
+
+	CommandHandler		*m_pCurrentCommandHandler;
+	CommandHandler 		*m_commandHandlers[256] = {0};
 };
 
 
 /* global objects */
-Fpga Ice40(IMGSIZE);
+Fpga  					Ice40(IMGSIZE);
+Flash 					g_flash(&hspi3);
+Count						g_count;
+CommandStream 	g_commandStream;
 
 /*
  * Setup function (called once at powerup)
@@ -111,6 +162,10 @@ void
 setup(void)
 {
 	mode_led_high();
+
+	g_commandStream.AddCommandHandler(0x7e, &Ice40);
+	g_commandStream.AddCommandHandler(0x01, &g_flash);
+	g_commandStream.AddCommandHandler(0x02, &g_count);
 
 	// Initiate Ice40 boot from flash
 	Ice40.reset(FLASH0);
@@ -269,6 +324,22 @@ static int8_t usbcdc_rxcallback(uint8_t *data, uint32_t *len){
 
 	USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &data[0]);
 
+#define COMMAND_HANDLER
+
+#ifdef COMMAND_HANDLER
+	if(*len)
+	{
+		if(!g_commandStream.stream(data, *len))
+		{
+			// HAL_UART_Transmit(&huart1, data, *len, HAL_UART_TIMEOUT_VALUE);
+			// mode_led_toggle();
+
+			HAL_UART_Transmit_DMA(&huart1, data, *len);
+			return USBD_OK;
+			//if(temp) mode_led_low();
+		}
+	}
+#else
 	if(*len)
 		if(!Ice40.stream(data, *len)){
 			// HAL_UART_Transmit(&huart1, data, *len, HAL_UART_TIMEOUT_VALUE);
@@ -278,7 +349,7 @@ static int8_t usbcdc_rxcallback(uint8_t *data, uint32_t *len){
 			return USBD_OK;
 			//if(temp) mode_led_low();
 		}
-
+#endif
 	USBD_CDC_ReceivePacket(&hUsbDeviceFS);
 
 	return USBD_OK;
@@ -464,8 +535,8 @@ uint8_t Fpga::stream(uint8_t *data, uint32_t len){
 				nbytes = 0;
 				status_led_high();
 				flash_SPI_Disable();
-				if (err = reset(MCNTRL)) 
-					flash_SPI_Enable(); 
+				if (err = reset(MCNTRL))
+					flash_SPI_Enable();
 				else { // Write bytes (assumes *len < NBYTES)
 					nbytes += len - 4;
 					write(img, len - 4);
@@ -492,6 +563,43 @@ uint8_t Fpga::stream(uint8_t *data, uint32_t len){
 	return len;
 }
 
+bool Fpga::init(void)
+{
+	bool bResult = false;
+	nbytes = 0;
+	status_led_high();
+	flash_SPI_Disable();
+	if (err = reset(MCNTRL))
+		flash_SPI_Enable();
+	else
+	{
+		nbytes+=4;
+		write((uint8_t *)&sig, 4);
+		bResult = true;
+	}
+
+	return bResult;
+}
+
+bool Fpga::streamData(uint8_t *data, uint32_t len, bool bEndStream){
+	bool bResult = true;
+
+	nbytes += len;
+	write(data, len);
+
+	if(nbytes >= NBYTES)
+	{
+		if(err = config())
+			status_led_high();
+		else
+			status_led_low();
+		flash_SPI_Enable();
+		bResult = false;
+	}
+
+	return bResult;
+}
+
 
 Flash::Flash(SPI_HandleTypeDef *hspi){
 	spi = hspi;
@@ -509,6 +617,122 @@ uint8_t Flash::write_read(uint8_t *tx, uint8_t *rx, uint32_t len){
 	return HAL_SPI_TransmitReceive(spi, tx, rx, len, HAL_UART_TIMEOUT_VALUE);
 }
 
+bool Flash::init(void)
+{
+	return false;
+}
+
+bool Flash::streamData(uint8_t *data, uint32_t len, bool bEndStream)
+{
+	return false;
+}
+
+
+bool Count::init(void)
+{
+	cdc_puts("Count::init()\n");
+	m_uCount = 0;
+	return true;
+}
+
+bool Count::streamData(uint8_t *data, uint32_t len, bool bEndStream)
+{
+	m_uCount+= len;
+	if(bEndStream)
+	{
+		char buffer[128];
+		sprintf(buffer, "%lu bytes received\n", m_uCount);
+		cdc_puts(buffer);
+		return false;
+	}
+	else
+		return true;
+}
+
+
+void CommandStream::Init(void)
+{
+	m_state = stDetect;
+	m_uHeaderScanPos = 0;
+}
+
+void CommandStream::AddCommandHandler(uint8_t uCommandByte, CommandHandler *pCommandHandler)
+{
+	// no error checking
+	m_commandHandlers[uCommandByte] = pCommandHandler;
+}
+
+
+uint8_t CommandStream::stream(uint8_t *data, uint32_t len)
+{
+	uint8_t *pScanPos = data;
+	uint8_t uCommandByte = 0;
+	bool    bEndStream = len < 64;
+
+	if(m_state == stDetect)
+	{
+		bool bFound = false;
+		while ((!bFound) && (pScanPos < (data+len)))
+		{
+			if(*pScanPos++ == m_header[m_uHeaderScanPos])
+			{
+				m_uHeaderScanPos++;
+				if(m_uHeaderScanPos == 3)
+				{
+					// header found
+					bFound = true;
+				}
+			}
+			else
+				m_uHeaderScanPos = 0;
+		}
+
+		if(bFound)
+		{
+			// next command byte could be in next call
+			if(pScanPos > (data + len))
+				m_state = stDetectCommandByte;
+			else
+			{
+				uCommandByte = *pScanPos++;
+				m_state = stDispatch;
+			}
+		}
+	}
+	else
+	{
+		if(m_state == stDetectCommandByte)
+		{
+			uCommandByte = *pScanPos++;
+			m_state = stDispatch;
+		}
+	}
+
+	if(m_state == stDispatch)
+	{
+		m_pCurrentCommandHandler = m_commandHandlers[uCommandByte];
+		if(m_pCurrentCommandHandler)
+		{
+			if(m_pCurrentCommandHandler->init())
+				m_state = stProcessing;
+			else
+				m_state = stDetect;
+		}
+		else
+			m_state = stDetect; // No handler go back to detect state
+	}
+
+	if(m_state == stProcessing)
+	{
+		if(!m_pCurrentCommandHandler->streamData(pScanPos, len - (pScanPos - data), bEndStream))
+		{
+			// handler has finished go back to detect state
+			m_state = stDetect;
+		}
+	}
+
+	return m_state != stDetect;
+}
 
 #ifdef __cplusplus
 }
