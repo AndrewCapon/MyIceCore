@@ -135,15 +135,15 @@ class Fpga : public CommandHandler {
 			nbytes += len;
 			write(data, len);
 
-//			if(nbytes >= NBYTES)
-//			{
-//				if(err = config())
-//					status_led_high();
-//				else
-//					status_led_low();
-//				flash_SPI_Enable();
-//				bResult = false;
-//			}
+			if(nbytes >= NBYTES)
+			{
+				if(err = config())
+					status_led_high();
+				else
+					status_led_low();
+				flash_SPI_Enable();
+				bResult = false;
+			}
 
 			return bResult;
 		}
@@ -681,15 +681,15 @@ bool Fpga::streamData(uint8_t *data, uint32_t len, bool bEndStream){
 	nbytes += len;
 	write(data, len);
 
-//	if(nbytes >= NBYTES)
-//	{
-//		if(err = config())
-//			status_led_high();
-//		else
-//			status_led_low();
-//		flash_SPI_Enable();
-//		bResult = false;
-//	}
+	if(nbytes >= NBYTES)
+	{
+		if(err = config())
+			status_led_high();
+		else
+			status_led_low();
+		flash_SPI_Enable();
+		bResult = false;
+	}
 
 	return bResult;
 }
