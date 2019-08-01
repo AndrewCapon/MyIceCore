@@ -100,7 +100,7 @@ public:
 		if(bEndStream)
 		{
 			char buffer[128];
-			sprintf(buffer, "%lu bytes received\n", m_uCount);
+			//sprintf(buffer, "%lu bytes received\n", m_uCount);
 			cdc_puts(buffer);
 			return false;
 		}
@@ -110,7 +110,7 @@ public:
 #endif
 
 private:
-	uint32_t m_uCount;
+	volatile uint32_t m_uCount;
 };
 
 class Fpga : public CommandHandler {
@@ -201,10 +201,25 @@ CommandStream 	g_commandStream;
 
 #ifdef TIMINGS
 volatile uint32_t uInlineFpgaTime;
-volatile uint32_t uVirtuaFpgalTime;
+volatile uint32_t uVirtualFpgalTime;
 volatile uint32_t uInlineCountTime;
 volatile uint32_t uVirtualCountTime;
 volatile uint32_t uStop;
+volatile uint32_t uCount1;
+volatile uint32_t uCount2;
+
+uint32_t TimeCalls(CommandHandler *pCommandHandler, uint32_t uIters)
+{
+	uint8_t buffer[64];
+
+	uint32_t uStartTicks = HAL_GetTick();
+	for(int i=0; i < uIters; i++)
+		pCommandHandler->streamData(buffer, 64, false);
+	uint32_t uEndTicks = HAL_GetTick();
+
+
+	return uEndTicks - uStartTicks;
+}
 #endif
 
 void
@@ -245,43 +260,30 @@ setup(void)
 
 
 #ifdef TIMINGS
+
+#define FPGA_ITERS 1000
+#define COUNT_ITERS 1000000
+
 	// timings
 	uint8_t buffer[64];
 	CommandHandler *pFpgaHandler = &Ice40;
 	CommandHandler *pCountHandler = &g_count;
 
-	// Fpga commandHandler
+	// inlined
 	uint32_t uStartTicks = HAL_GetTick();
-	for(int i=0; i < 1000; i++)
+	for(int i=0; i < FPGA_ITERS; i++)
 		Ice40.streamDataInlined(buffer, 64, false);
-
 	uint32_t uInlineFpgaTicks = HAL_GetTick();
 
-	for(int i=0; i < 1000; i++)
-		pFpgaHandler->streamData(buffer, 64, false);
-
-	uint32_t uVirtualFpgaTicks = HAL_GetTick();
-
-
-	// Count command handler
-	for(int i=0; i < 1000; i++)
+	for(int i=0; i < COUNT_ITERS; i++)
 			g_count.streamDataInlined(buffer, 64, false);
-
 	uint32_t uInlineCountTicks = HAL_GetTick();
 
-
-	// Count command handler
-	for(int i=0; i < 1000; i++)
-		pCountHandler->streamData(buffer, 64, false);
-
-	uint32_t uVirtualCountTicks = HAL_GetTick();
-
-
 	uInlineFpgaTime = uInlineFpgaTicks-uStartTicks;
-	uVirtuaFpgalTime = uVirtualFpgaTicks-uInlineFpgaTicks;
+	uInlineCountTime = uInlineCountTicks - uInlineFpgaTicks;
 
-	uInlineCountTime = uInlineCountTicks - uVirtualFpgaTicks;
-	uVirtualCountTime = uVirtualCountTicks - uInlineCountTicks;
+	uVirtualFpgalTime  = TimeCalls(pFpgaHandler, FPGA_ITERS);
+	uVirtualCountTime = TimeCalls(pCountHandler, COUNT_ITERS);
 
 	uStop = 1;
 #endif
@@ -734,7 +736,7 @@ bool Count::streamData(uint8_t *data, uint32_t len, bool bEndStream)
 	if(bEndStream)
 	{
 		char buffer[128];
-		sprintf(buffer, "%lu bytes received\n", m_uCount);
+		//sprintf(buffer, "%lu bytes received\n", m_uCount);
 		cdc_puts(buffer);
 		return false;
 	}

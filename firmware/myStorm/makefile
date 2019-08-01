@@ -30,7 +30,7 @@ ARCH	= -mcpu=cortex-m7
 
 # uncomment to include debug symbols
 DEBUG	= -g
-OPT	= -O2
+OPT	= -O3
 
 # directories
 #OUTPUT_DIR	= $(TARGET)_output
