@@ -113,6 +113,13 @@ private:
 	volatile uint32_t m_uCount;
 };
 
+
+
+
+
+
+
+
 class Fpga : public CommandHandler {
 	uint32_t NBYTES;
 	uint8_t state;
@@ -127,6 +134,7 @@ class Fpga : public CommandHandler {
 		uint8_t stream(uint8_t *data, uint32_t len);
 		virtual bool streamData(uint8_t *data, uint32_t len, bool bEndStream);
 		virtual bool init(void);
+
 
 #ifdef TIMINGS
 		inline bool streamDataInlined(uint8_t *data, uint32_t len, bool bEndStream){
@@ -151,16 +159,58 @@ class Fpga : public CommandHandler {
 
 };
 
-class Flash : public CommandHandler{
+
+
+
+
+
+
+
+class Flash: public CommandHandler
+{
+public:
+	Flash(SPI_HandleTypeDef *hspi);
+
+	bool CheckId(void);
+	void EraseFlash(void);
+	void Erase64K(uint8_t uPage);
+
+	bool WriteData(uint32_t uAddr, uint8_t *pData, uint32_t uLen);
+	bool ReadData(uint32_t uAddr, uint8_t *pData, uint32_t uLen);
+
+	bool WritePage(uint16_t uPage, uint8_t *pData);
+	bool ReadPage(uint16_t uPage, uint8_t *pData);
+
+	void PollForReady(void);
+	bool IsReady(void);
+
+	void InitBufferedWrite();
+	void BufferedWrite(uint8_t *pData, uint32_t uLen);
+	void FlushBuffer(void);
+
+
+private:
+
+	void Enable(void);
+	void Disable(void);
+
+
+
+	uint8_t write(uint8_t *p, uint32_t len);
+	uint8_t read(uint8_t *p, uint32_t len);
+	uint8_t write_read(uint8_t *tx, uint8_t *rx, uint32_t len);
+
+	virtual bool streamData(uint8_t *data, uint32_t len, bool bEndStream);
+	virtual bool init(void);
+
 	SPI_HandleTypeDef *spi;
 
-	public:
-	 Flash(SPI_HandleTypeDef *hspi);
-	 uint8_t write(uint8_t *p, uint32_t len);
-	 uint8_t read(uint8_t *p, uint32_t len);
-	 uint8_t write_read(uint8_t *tx, uint8_t *rx, uint32_t len);
- 	 virtual bool streamData(uint8_t *data, uint32_t len, bool bEndStream);
- 	 virtual bool init(void);
+	void WriteEnable(void);
+
+	uint32_t m_uCur256BytePage;
+	uint16_t m_uBufferPos;
+	uint32_t m_uTotalBytes;
+	uint8_t  m_buffer[256];
 };
 
 class CommandStream
@@ -232,7 +282,7 @@ setup(void)
 	g_commandStream.AddCommandHandler(0x02, &g_count);
 
 	// Initiate Ice40 boot from flash
-	Ice40.reset(FLASH0);
+	Ice40.reset(FLASH1);
 	HAL_Delay(1000);
 	if(!gpio_ishigh(ICE40_CDONE)){
 		err = ICE_ERROR;
@@ -312,12 +362,73 @@ loop(void)
 	//cdc_puts("Waiting for USB serial\n");
 
 	if(gpio_ishigh(MODE_BOOT)) {
+
+
 		mode_led_toggle();
 		mode = mode ? 0 : 1;
-		char buffer[16];
-		// Eventually flash writing will go here, for now just report flash id
-		if(flash_id(buffer, 16))
-			cdc_puts(buffer);
+		if(g_flash.CheckId())
+		{
+			cdc_puts((char *)"AT25SF041 Flash Found\n");
+
+//			uint8_t rxBuffer[256]= {0};
+//			uint8_t txBuffer[256]= {0};
+////			for(int i=0; i < 256; i++)
+////				txBuffer[i] = i;
+////
+////			g_flash.Erase64K(0);
+////
+////			for(int p=0; p < 16; p++)
+////				g_flash.WritePage(p, txBuffer);
+////
+////			for(int p=0; p < 16; p++)
+////			{
+////				g_flash.ReadPage(p, rxBuffer);
+////				cdc_puts((char *)"AT25SF041 Flash Found\n");
+////			}
+//
+//			for(uint32_t uPage = 0; uPage < (140000/256); uPage++)
+//			{
+//					g_flash.ReadPage(uPage, rxBuffer);
+//					CDC_Transmit_FS(rxBuffer, 256);
+//					mode_led_toggle();
+//			}
+//
+//			//cdc_puts((char *)"Finished\n");
+//
+
+
+//			strcpy((char *)txBuffer, "Test String");
+//			uint32_t uLen = strlen((char *)txBuffer);
+//
+////			g_flash.ReadData(0, rxBuffer, uLen);
+//
+//			g_flash.ErashFlash();
+//
+////			g_flash.WriteData(0, txBuffer, uLen);
+////
+////			g_flash.ReadData(0, rxBuffer, uLen);
+//
+////			if(rxBuffer[0]=='T')
+////				cdc_puts("Read Ok\n");
+////			else
+////				cdc_puts("Read failed\n");
+//
+//			if(g_flash.CheckId())
+//				cdc_puts((char *)"END AT25SF041 Flash Found\n");
+//			else
+//				cdc_puts((char *)"END AT25SF041 Flash not Found\n");
+//
+
+		}
+		else
+			cdc_puts((char *)"ERROR: AT25SF041 Flash Not Found\n");
+
+
+			// Eventually flash writing will go here, for now just report flash id
+
+//		char buffer[16];
+//		if(flash_id(buffer, 16))
+//			cdc_puts(buffer);
 
 		HAL_Delay(1000);
 	}
@@ -363,42 +474,42 @@ void flash_SPI_Disable(void){
 }
 
 /* Get flash id example flash coms */
-uint8_t flash_id(char *buf, int len){
-	int r, i;
-	int l1 = len - 1;
-	Flash flash(&hspi3);
-	uint8_t uCommand = 0xAB;
-	uint8_t response[3] = {0,0,0};
-
-	release_flash();
-	free_flash();
-	flash_SPI_Enable();
-
-	gpio_low(ICE40_SPI_CS);
-	flash.write(&uCommand,1);
-	flash.read(response,3);
-	gpio_high(ICE40_SPI_CS);
-
-	uCommand = 0x9F;
-	gpio_low(ICE40_SPI_CS);
-	flash.write(&uCommand,1);
-	flash.read(response,3);
-	gpio_high(ICE40_SPI_CS);
-
-	//create a Hex like string from response bytes
-	for(r = 0, i = 0; r < l1; r+=5, i++){
-		buf[r] = '0';
-		buf[r+1] = 'x';
-		buf[r+2] = TO_HEX(((response[i] & 0xF0) >> 4));
-		buf[r+3] = TO_HEX((response[i] & 0x0F));
-		buf[r+4] = ',';
-	}
-	buf[l1 -1] = '\n';
-	buf[l1] = '\0';
-	flash_SPI_Disable();
-
-	return len;
-}
+//uint8_t flash_id(char *buf, int len){
+//	int r, i;
+//	int l1 = len - 1;
+//	Flash flash(&hspi3);
+//	uint8_t uCommand = 0xAB;
+//	uint8_t response[3] = {0,0,0};
+//
+//	release_flash();
+//	free_flash();
+//	flash_SPI_Enable();
+//
+//	gpio_low(ICE40_SPI_CS);
+//	flash.write(&uCommand,1);
+//	flash.read(response,3);
+//	gpio_high(ICE40_SPI_CS);
+//
+//	uCommand = 0x9F;
+//	gpio_low(ICE40_SPI_CS);
+//	flash.write(&uCommand,1);
+//	flash.read(response,3);
+//	gpio_high(ICE40_SPI_CS);
+//
+//	//create a Hex like string from response bytes
+//	for(r = 0, i = 0; r < l1; r+=5, i++){
+//		buf[r] = '0';
+//		buf[r+1] = 'x';
+//		buf[r+2] = TO_HEX(((response[i] & 0xF0) >> 4));
+//		buf[r+3] = TO_HEX((response[i] & 0x0F));
+//		buf[r+4] = ',';
+//	}
+//	buf[l1 -1] = '\n';
+//	buf[l1] = '\0';
+//	flash_SPI_Disable();
+//
+//	return len;
+//}
 
 /**
   * @brief  EXTI line detection callbacks.
@@ -523,6 +634,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 }
 
 
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Fpga
+/////////////////////////////////////////////////////////////////////////////
+
 Fpga::Fpga(uint32_t img_size){
 	NBYTES = img_size;
 	state = DETECT;
@@ -541,10 +659,12 @@ uint8_t Fpga::reset(uint8_t bit_src){
 			hold_flash();
 			break;
 		case FLASH0 : // CBSDEL=00 Flash
+			gpio_high(ICE40_SPI_CS);
 			hold_flash();
 			protect_flash();
 			break;
 		case FLASH1 : // CBSDEL=01 Flash
+			gpio_high(ICE40_SPI_CS);
 			release_flash();
 			protect_flash();
 			break;
@@ -681,7 +801,7 @@ bool Fpga::streamData(uint8_t *data, uint32_t len, bool bEndStream){
 	nbytes += len;
 	write(data, len);
 
-	if(nbytes >= NBYTES)
+	if(bEndStream || (nbytes >= NBYTES))
 	{
 		if(err = config())
 			status_led_high();
@@ -696,9 +816,53 @@ bool Fpga::streamData(uint8_t *data, uint32_t len, bool bEndStream){
 
 
 
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Flash
+/////////////////////////////////////////////////////////////////////////////
+
 Flash::Flash(SPI_HandleTypeDef *hspi){
 	spi = hspi;
 }
+
+/* Get flash id example flash coms */
+//uint8_t flash_id(char *buf, int len){
+//	int r, i;
+//	int l1 = len - 1;
+//	Flash flash(&hspi3);
+//	uint8_t uCommand = 0xAB;
+//	uint8_t response[3] = {0,0,0};
+//
+//	release_flash();
+//	free_flash();
+//	flash_SPI_Enable();
+//
+//	gpio_low(ICE40_SPI_CS);
+//	flash.write(&uCommand,1);
+//	flash.read(response,3);
+//	gpio_high(ICE40_SPI_CS);
+//
+//	uCommand = 0x9F;
+//	gpio_low(ICE40_SPI_CS);
+//	flash.write(&uCommand,1);
+//	flash.read(response,3);
+//	gpio_high(ICE40_SPI_CS);
+//
+//	//create a Hex like string from response bytes
+//	for(r = 0, i = 0; r < l1; r+=5, i++){
+//		buf[r] = '0';
+//		buf[r+1] = 'x';
+//		buf[r+2] = TO_HEX(((response[i] & 0xF0) >> 4));
+//		buf[r+3] = TO_HEX((response[i] & 0x0F));
+//		buf[r+4] = ',';
+//	}
+//	buf[l1 -1] = '\n';
+//	buf[l1] = '\0';
+//	flash_SPI_Disable();
+//
+//	return len;
+//}
 
 uint8_t Flash::write(uint8_t *p, uint32_t len){
 	return HAL_SPI_Transmit(spi,p, len, HAL_UART_TIMEOUT_VALUE);
@@ -712,15 +876,282 @@ uint8_t Flash::write_read(uint8_t *tx, uint8_t *rx, uint32_t len){
 	return HAL_SPI_TransmitReceive(spi, tx, rx, len, HAL_UART_TIMEOUT_VALUE);
 }
 
+void Flash::Enable(void)
+{
+	release_flash();
+	free_flash();
+	flash_SPI_Enable();
+
+	uint8_t uCommand = 0xAB;
+	gpio_low(ICE40_SPI_CS);
+	write(&uCommand,1);
+	gpio_high(ICE40_SPI_CS);
+}
+
+void Flash::Disable(void)
+{
+	flash_SPI_Disable();
+}
+
+bool Flash::CheckId(void)
+{
+	Enable();
+
+	uint8_t uCommand = 0x9F;
+	uint8_t response[3] = {0,0,0};
+
+	gpio_low(ICE40_SPI_CS);
+	write(&uCommand,1);
+	read(response,3);
+	gpio_high(ICE40_SPI_CS);
+
+	Disable();
+
+	return((response[0]==0x1F) &&  (response[1]==0x84) && (response[2]==0x01));
+}
+
 bool Flash::init(void)
 {
-	return false;
+	bool bResult = false;
+
+	if(CheckId())
+	{
+		EraseFlash();
+//		Erase64K(0);
+//		Erase64K(1);
+//		Erase64K(2);
+
+		InitBufferedWrite();
+
+		bResult = true;
+	}
+
+	return bResult;
+}
+
+void Flash::InitBufferedWrite(void)
+{
+	m_uTotalBytes = 0;
+	m_uCur256BytePage = 0;
+	m_uBufferPos = 0;
+}
+
+void Flash::BufferedWrite(uint8_t *pData, uint32_t uLen)
+{
+	m_uTotalBytes+= uLen;
+
+	while (uLen)
+	{
+		uint16_t uRemaining = 256 - m_uBufferPos;
+		if(uLen < uRemaining)
+		{
+			memcpy(m_buffer+m_uBufferPos, pData, uLen);
+			m_uBufferPos += uLen;
+			uLen = 0;
+		}
+		else
+		{
+			memcpy(m_buffer+m_uBufferPos, pData, uRemaining);
+			m_uBufferPos += uRemaining;
+			pData += uRemaining;
+			uLen -= uRemaining;
+		}
+
+		if(m_uBufferPos == 256)
+		{
+			// ok write to flash
+			WritePage(m_uCur256BytePage, m_buffer);
+
+			m_uCur256BytePage++;
+			m_uBufferPos=0;
+		}
+
+	}
+}
+
+void Flash::FlushBuffer(void)
+{
+	if(m_uBufferPos)
+		WritePage(m_uCur256BytePage, m_buffer);
 }
 
 bool Flash::streamData(uint8_t *data, uint32_t len, bool bEndStream)
 {
-	return false;
+	bool bResult = true;
+
+	if(!m_uTotalBytes) // bodge lookat doing properly
+	{
+		// skip 4 byte header
+		data+=4;
+		len-=4;
+	}
+
+	BufferedWrite(data, len);
+
+	if(bEndStream || (m_uTotalBytes >= (IMGSIZE)))
+	{
+//		if(err = config())
+//			status_led_high();
+//		else
+//			status_led_low();
+
+		FlushBuffer();
+		bResult = false;
+	}
+
+	return bResult;
+
 }
+
+bool Flash::IsReady(void)
+{
+
+	Enable();
+	uint8_t uCommand = 0x05;
+	uint8_t response;
+
+	gpio_low(ICE40_SPI_CS);
+	write(&uCommand,1);
+	read(&response,1);
+	gpio_high(ICE40_SPI_CS);
+
+	Disable();
+
+	return (!(response & 1));
+}
+
+void Flash::PollForReady(void)
+{
+	while(!IsReady())
+		;
+}
+
+bool Flash::WritePage(uint16_t uPage, uint8_t *pData)
+{
+	WriteEnable();
+
+	uint8_t uMSB = (uPage >> 8) & 0xFF;
+	uint8_t uLSB = uPage &0xFF;
+
+
+	gpio_low(ICE40_SPI_CS);
+	uint8_t command[4] = {0x02, uMSB, uLSB,0x00};
+	write(command,4);
+
+	write(pData, 256);
+	gpio_high(ICE40_SPI_CS);
+
+	Disable();
+
+	PollForReady();
+
+}
+
+
+
+bool Flash::ReadPage(uint16_t uPage, uint8_t *pData)
+{
+	Enable();
+
+	uint8_t uMSB = (uPage >> 8) & 0xFF;
+	uint8_t uLSB = uPage &0xFF;
+
+
+	gpio_low(ICE40_SPI_CS);
+	uint8_t command[4] = {0x03, uMSB, uLSB, 0x00};
+	write(command,4);
+
+	read(pData, 256);
+	gpio_high(ICE40_SPI_CS);
+
+	Disable();
+}
+
+
+
+bool Flash::WriteData(uint32_t uAddr, uint8_t *pData, uint32_t uLen)
+{
+	WriteEnable();
+
+	// just address 0 at the moment
+	gpio_low(ICE40_SPI_CS);
+	uint8_t command[4] = {0x02,0x00,0x00,0x00};
+	write(command,4);
+
+	write(pData, uLen);
+	gpio_high(ICE40_SPI_CS);
+
+	Disable();
+
+	PollForReady();
+}
+
+bool Flash::ReadData(uint32_t uAddr, uint8_t *pData, uint32_t uLen)
+{
+	PollForReady();
+
+	Enable();
+
+	// just address 0 at the moment
+	gpio_low(ICE40_SPI_CS);
+	uint8_t command[4] = {0x03,0x00,0x00,0x00};
+	write(command,4);
+
+	read(pData, uLen);
+	gpio_high(ICE40_SPI_CS);
+
+	Disable();
+}
+
+void Flash::WriteEnable(void)
+{
+	Enable();
+
+	uint8_t uCommand = 0x06;
+
+	gpio_low(ICE40_SPI_CS);
+	write(&uCommand,1);
+	gpio_high(ICE40_SPI_CS);
+
+}
+
+void Flash::EraseFlash(void)
+{
+	PollForReady();
+
+	WriteEnable();
+
+	uint8_t uCommand = 0x60;
+
+	gpio_low(ICE40_SPI_CS);
+	write(&uCommand,1);
+	gpio_high(ICE40_SPI_CS);
+
+	Disable();
+
+	PollForReady();
+
+}
+
+void Flash::Erase64K(uint8_t uPage)
+{
+	PollForReady();
+
+	WriteEnable();
+
+	uint8_t command[] = { 0xD8, uPage, 0, 0};
+
+	gpio_low(ICE40_SPI_CS);
+	write(command,4);
+	gpio_high(ICE40_SPI_CS);
+
+	Disable();
+
+	PollForReady();
+
+}
+
+
 
 
 bool Count::init(void)
@@ -744,6 +1175,11 @@ bool Count::streamData(uint8_t *data, uint32_t len, bool bEndStream)
 		return true;
 }
 
+
+
+/////////////////////////////////////////////////////////////////////////////
+// CommandStream
+/////////////////////////////////////////////////////////////////////////////
 
 void CommandStream::Init(void)
 {
