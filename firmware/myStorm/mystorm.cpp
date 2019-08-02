@@ -60,6 +60,7 @@ extern TIM_HandleTypeDef htim6;
 
 static int mode = 0;
 static int err = 0;
+uint8_t errors = 0;
 
 uint32_t rxi,rxo;
 uint8_t  rxb[RX];
@@ -70,6 +71,7 @@ void flash_SPI_Enable(void);
 void flash_SPI_Disable(void);
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
 uint8_t flash_id(char *buf, int len);
+uint8_t error_report(char *buf, int len);
 
 /* Interrupts */
 static int8_t usbcdc_rxcallback(uint8_t *data, uint32_t *len);
@@ -306,7 +308,6 @@ setup(void)
 		//mode_led_low();
 
 
-	USBD_CDC_ReceivePacket(&hUsbDeviceFS);
 
 
 #ifdef TIMINGS
@@ -337,6 +338,9 @@ setup(void)
 
 	uStop = 1;
 #endif
+
+	err = USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+	errors += err ? 1 : 0;
 }
 
 
@@ -348,6 +352,7 @@ setup(void)
 void
 loop(void)
 {
+	char buffer[16];
 	// uint8_t b = 0;
 
 	// if (err) {
@@ -358,6 +363,11 @@ loop(void)
 	// 		status_led_low();
 	// 	}
 	// }
+	// if(err) {
+	// 	error_report(buffer, 16);
+	// 	cdc_puts(buffer);
+	// 	err = 0;
+	// }
 
 	//cdc_puts("Waiting for USB serial\n");
 
@@ -366,6 +376,7 @@ loop(void)
 
 		mode_led_toggle();
 		mode = mode ? 0 : 1;
+
 		if(g_flash.CheckId())
 		{
 			cdc_puts((char *)"AT25SF041 Flash Found\n");
@@ -441,7 +452,8 @@ static void cdc_puts(char *s){
 	char *p;
 
 	for (p = s; *p; p++);
-	CDC_Transmit_FS((uint8_t *)s, p - s);
+	err = CDC_Transmit_FS((uint8_t *)s, p - s);
+	errors += err ? 1 : 0;
 	if (p > s && p[-1] == '\n')
 		cdc_puts("\r");
 }
@@ -511,6 +523,23 @@ void flash_SPI_Disable(void){
 //	return len;
 //}
 
+/* errors to char */
+uint8_t error_report(char *buf, int len){
+	buf[0] = '0';
+	buf[1] = 'x';
+	buf[2] = TO_HEX(((errors & 0xF0) >> 4));
+	buf[3] = TO_HEX((errors & 0x0F));
+	buf[4] = '-';
+	buf[5] = 'E';
+	buf[6] = 'R';
+	buf[7] = 'R';
+	buf[8] = 'S';
+	buf[9] = '\n';
+	buf[10] = '\0';
+
+	return 6;
+}
+
 /**
   * @brief  EXTI line detection callbacks.
   * @param  GPIO_Pin Specifies the pins connected EXTI line
@@ -539,7 +568,7 @@ static int8_t usbcdc_rxcallback(uint8_t *data, uint32_t *len){
 			// HAL_UART_Transmit(&huart1, data, *len, HAL_UART_TIMEOUT_VALUE);
 			// mode_led_toggle();
 
-			HAL_UART_Transmit_DMA(&huart1, data, *len);
+			err = HAL_UART_Transmit_DMA(&huart1, data, *len);
 			return USBD_OK;
 			//if(temp) mode_led_low();
 		}
@@ -550,12 +579,14 @@ static int8_t usbcdc_rxcallback(uint8_t *data, uint32_t *len){
 			// HAL_UART_Transmit(&huart1, data, *len, HAL_UART_TIMEOUT_VALUE);
 			// mode_led_toggle();
 
+
 			HAL_UART_Transmit_DMA(&huart1, data, *len);
 			return USBD_OK;
 			//if(temp) mode_led_low();
 		}
 #endif
-	USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+	err = USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+	errors += err ? 1 : 0;
 
 	return USBD_OK;
 }
@@ -569,7 +600,8 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
   /* Prevent unused argument(s) compilation warning */
   UNUSED(huart);
   mode_led_toggle();
-  USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+  err = USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+  errors += err ? 1 : 0;
 }
 
 
@@ -582,6 +614,7 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart){
   /* Prevent unused argument(s) compilation warning */
   UNUSED(huart);
 	err = huart->ErrorCode;
+	errors += err ? 1 : 0;
 	// cdc_puts("Uart error ");
 	// cdc_puts('0' + huart->ErrorCode);
 	// cdc_puts("\n");
@@ -612,7 +645,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
   /* Prevent unused argument(s) compilation warning */
 	UNUSED(huart);
   	rxi = (++rxi == RX) ? 0 : rxi;
-	HAL_UART_Receive_IT(huart, (uint8_t *)(rxb + rxi), 1);
+	err = HAL_UART_Receive_IT(huart, (uint8_t *)(rxb + rxi), 1);
+	errors += err ? 1 : 0;
 }
 
 /**
@@ -773,6 +807,8 @@ uint8_t Fpga::stream(uint8_t *data, uint32_t len){
 		flash_SPI_Enable();
 		state = DETECT;
 	}
+
+	errors += err ? 1 : 0;
 
 	return len;
 }
