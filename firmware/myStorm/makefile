@@ -9,7 +9,13 @@
 
 TARGET	= mystorm
 CPP	= mystorm.cpp \
-		main.cpp
+	  main.cpp \
+	  CADCommandHandler.cpp \
+	  CADCommandStream.cpp \
+	  CADUtilsHandler.cpp \
+	  CADFlashHandler.cpp \
+	  CADFpgaHandler.cpp
+	  
 OCDCONFIG = stlink.cfg
 OCD = /Applications/Eclipse.app/Contents/Eclipse/plugins/fr.ac6.mcu.externaltools.openocd.macos64_1.23.0.201904120827/tools/openocd/bin/openocd
 OCDSCRIPTS = /Applications/Eclipse.app/Contents/Eclipse/plugins/fr.ac6.mcu.debug_2.5.0.201904120827/resources/openocd/st_scripts
@@ -131,7 +137,8 @@ HEADERS := $(wildcard ../Inc/*.h \
 	../Drivers/STM32F7xx_HAL_Driver/Inc/*.h \
 	../Drivers/STM32F7xx_HAL_Driver/Inc/Legacy/*.h \
 	../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/*.h \
-	../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc/*.h)
+	../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc/*.h) \
+	*.h
 
 $(CPP_OBJECTS) $(SRC_OBJECTS) $(LIB_OBJECTS): $(HEADERS)
 $(ASM_OBJECTS) $(CPP_OBJECTS) $(SRC_OBJECTS) $(LIB_OBJECTS): | $(OBJ_DIR)

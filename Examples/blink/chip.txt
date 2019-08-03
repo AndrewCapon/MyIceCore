@@ -1,4 +1,4 @@
-.comment arachne-pnr 0.1+310+0 (git sha1 5d830dd, g++ 5.4.0-6ubuntu1~16.04.9 -O2)
+.comment arachne-pnr 0.1+325+ 0 (git sha1 840bdfd, c++ 10.0.1 -O2)
 .device 8k
 .io_tile 1 0
 000000000000000000
@@ -2723,18 +2723,18 @@
 .logic_tile 26 4
 000000000000000000000000000000000000000000000000000000
 000000000000000000000011100000000000000000000000000000
-001000000000000000000000010000000000000000000000000000
+001000000000000000000000000000000000000000000000000000
+000000000000000000000000000000000000000000000000000000
+010000000000000000000000000000000000000000000000000000
+010000000000000000000000000000000000000000000000000000
+000000000000000000000000010000000000000000000000000000
 000000000000000000000010000000000000000000000000000000
-010000000000000000000000000000000000000000000000000000
-010000000000000000000000000000000000000000000000000000
 000000000000000000000000000000000000000000000000000000
 000000000000000000000000000000000000000000000000000000
 000000000000000000000000000000000000000000000000000000
 000000000000000000000000000000000000000000000000000000
-000000000000000000000000000000000000000000000000000000
-000000000000000000000000000000000000000000000000000000
-000000000000000000000000001000000000000010000100000000
-000000000000000000000000001001000000000000000000000000
+000000000000000000000000000000011010000011110100000000
+000000000000000000000000000000010000000011110000000000
 000000000000000000000000000000000000000000000000000000
 000000000000000000000000000000000000000000000000000000
 .logic_tile 27 4
@@ -19604,10 +19604,10 @@
 .sym 105136 my_blink.count[5]
 .sym 105137 my_blink.count[6]
 .sym 105138 my_blink.count[7]
-.sym 105241 my_blink.count[1]
+.sym 105241 $false
 .sym 105242 $false
 .sym 105243 $false
-.sym 105244 $false
+.sym 105244 my_blink.count[1]
 .sym 105251 my_blink.count[0]
 .sym 105252 clk$2$2
 .sym 105253 $false
@@ -19641,134 +19641,134 @@
 .sym 109283 my_blink.count[0]
 .sym 109284 $false
 .sym 109285 $false
-.sym 109287 $auto$alumacc.cc:474:replace_alu$4.C[2]
+.sym 109287 $auto$alumacc.cc:474:replace_alu$12.C[2]
 .sym 109289 $false
 .sym 109290 my_blink.count[1]
-.sym 109293 $auto$alumacc.cc:474:replace_alu$4.C[3]
+.sym 109293 $auto$alumacc.cc:474:replace_alu$12.C[3]
 .sym 109294 $false
 .sym 109295 $false
 .sym 109296 my_blink.count[2]
-.sym 109297 $auto$alumacc.cc:474:replace_alu$4.C[2]
-.sym 109299 $auto$alumacc.cc:474:replace_alu$4.C[4]
+.sym 109297 $auto$alumacc.cc:474:replace_alu$12.C[2]
+.sym 109299 $auto$alumacc.cc:474:replace_alu$12.C[4]
 .sym 109300 $false
 .sym 109301 $false
 .sym 109302 my_blink.count[3]
-.sym 109303 $auto$alumacc.cc:474:replace_alu$4.C[3]
-.sym 109305 $auto$alumacc.cc:474:replace_alu$4.C[5]
+.sym 109303 $auto$alumacc.cc:474:replace_alu$12.C[3]
+.sym 109305 $auto$alumacc.cc:474:replace_alu$12.C[5]
 .sym 109306 $false
 .sym 109307 $false
 .sym 109308 my_blink.count[4]
-.sym 109309 $auto$alumacc.cc:474:replace_alu$4.C[4]
-.sym 109311 $auto$alumacc.cc:474:replace_alu$4.C[6]
+.sym 109309 $auto$alumacc.cc:474:replace_alu$12.C[4]
+.sym 109311 $auto$alumacc.cc:474:replace_alu$12.C[6]
 .sym 109312 $false
 .sym 109313 $false
 .sym 109314 my_blink.count[5]
-.sym 109315 $auto$alumacc.cc:474:replace_alu$4.C[5]
-.sym 109317 $auto$alumacc.cc:474:replace_alu$4.C[7]
+.sym 109315 $auto$alumacc.cc:474:replace_alu$12.C[5]
+.sym 109317 $auto$alumacc.cc:474:replace_alu$12.C[7]
 .sym 109318 $false
 .sym 109319 $false
 .sym 109320 my_blink.count[6]
-.sym 109321 $auto$alumacc.cc:474:replace_alu$4.C[6]
-.sym 109323 $auto$alumacc.cc:474:replace_alu$4.C[8]
+.sym 109321 $auto$alumacc.cc:474:replace_alu$12.C[6]
+.sym 109323 $auto$alumacc.cc:474:replace_alu$12.C[8]
 .sym 109324 $false
 .sym 109325 $false
 .sym 109326 my_blink.count[7]
-.sym 109327 $auto$alumacc.cc:474:replace_alu$4.C[7]
+.sym 109327 $auto$alumacc.cc:474:replace_alu$12.C[7]
 .sym 109328 $true
 .sym 109329 clk$2$2
 .sym 109330 $false
-.sym 109367 $auto$alumacc.cc:474:replace_alu$4.C[8]
-.sym 109404 $auto$alumacc.cc:474:replace_alu$4.C[9]
+.sym 109367 $auto$alumacc.cc:474:replace_alu$12.C[8]
+.sym 109404 $auto$alumacc.cc:474:replace_alu$12.C[9]
 .sym 109405 $false
 .sym 109406 $false
 .sym 109407 my_blink.count[8]
-.sym 109408 $auto$alumacc.cc:474:replace_alu$4.C[8]
-.sym 109410 $auto$alumacc.cc:474:replace_alu$4.C[10]
+.sym 109408 $auto$alumacc.cc:474:replace_alu$12.C[8]
+.sym 109410 $auto$alumacc.cc:474:replace_alu$12.C[10]
 .sym 109411 $false
 .sym 109412 $false
 .sym 109413 my_blink.count[9]
-.sym 109414 $auto$alumacc.cc:474:replace_alu$4.C[9]
-.sym 109416 $auto$alumacc.cc:474:replace_alu$4.C[11]
+.sym 109414 $auto$alumacc.cc:474:replace_alu$12.C[9]
+.sym 109416 $auto$alumacc.cc:474:replace_alu$12.C[11]
 .sym 109417 $false
 .sym 109418 $false
 .sym 109419 my_blink.count[10]
-.sym 109420 $auto$alumacc.cc:474:replace_alu$4.C[10]
-.sym 109422 $auto$alumacc.cc:474:replace_alu$4.C[12]
+.sym 109420 $auto$alumacc.cc:474:replace_alu$12.C[10]
+.sym 109422 $auto$alumacc.cc:474:replace_alu$12.C[12]
 .sym 109423 $false
 .sym 109424 $false
 .sym 109425 my_blink.count[11]
-.sym 109426 $auto$alumacc.cc:474:replace_alu$4.C[11]
-.sym 109428 $auto$alumacc.cc:474:replace_alu$4.C[13]
+.sym 109426 $auto$alumacc.cc:474:replace_alu$12.C[11]
+.sym 109428 $auto$alumacc.cc:474:replace_alu$12.C[13]
 .sym 109429 $false
 .sym 109430 $false
 .sym 109431 my_blink.count[12]
-.sym 109432 $auto$alumacc.cc:474:replace_alu$4.C[12]
-.sym 109434 $auto$alumacc.cc:474:replace_alu$4.C[14]
+.sym 109432 $auto$alumacc.cc:474:replace_alu$12.C[12]
+.sym 109434 $auto$alumacc.cc:474:replace_alu$12.C[14]
 .sym 109435 $false
 .sym 109436 $false
 .sym 109437 my_blink.count[13]
-.sym 109438 $auto$alumacc.cc:474:replace_alu$4.C[13]
-.sym 109440 $auto$alumacc.cc:474:replace_alu$4.C[15]
+.sym 109438 $auto$alumacc.cc:474:replace_alu$12.C[13]
+.sym 109440 $auto$alumacc.cc:474:replace_alu$12.C[15]
 .sym 109441 $false
 .sym 109442 $false
 .sym 109443 my_blink.count[14]
-.sym 109444 $auto$alumacc.cc:474:replace_alu$4.C[14]
-.sym 109446 $auto$alumacc.cc:474:replace_alu$4.C[16]
+.sym 109444 $auto$alumacc.cc:474:replace_alu$12.C[14]
+.sym 109446 $auto$alumacc.cc:474:replace_alu$12.C[16]
 .sym 109447 $false
 .sym 109448 $false
 .sym 109449 my_blink.count[15]
-.sym 109450 $auto$alumacc.cc:474:replace_alu$4.C[15]
+.sym 109450 $auto$alumacc.cc:474:replace_alu$12.C[15]
 .sym 109451 $true
 .sym 109452 clk$2$2
 .sym 109453 $false
-.sym 109490 $auto$alumacc.cc:474:replace_alu$4.C[16]
-.sym 109527 $auto$alumacc.cc:474:replace_alu$4.C[17]
+.sym 109490 $auto$alumacc.cc:474:replace_alu$12.C[16]
+.sym 109527 $auto$alumacc.cc:474:replace_alu$12.C[17]
 .sym 109528 $false
 .sym 109529 $false
 .sym 109530 my_blink.count[16]
-.sym 109531 $auto$alumacc.cc:474:replace_alu$4.C[16]
-.sym 109533 $auto$alumacc.cc:474:replace_alu$4.C[18]
+.sym 109531 $auto$alumacc.cc:474:replace_alu$12.C[16]
+.sym 109533 $auto$alumacc.cc:474:replace_alu$12.C[18]
 .sym 109534 $false
 .sym 109535 $false
 .sym 109536 my_blink.count[17]
-.sym 109537 $auto$alumacc.cc:474:replace_alu$4.C[17]
-.sym 109539 $auto$alumacc.cc:474:replace_alu$4.C[19]
+.sym 109537 $auto$alumacc.cc:474:replace_alu$12.C[17]
+.sym 109539 $auto$alumacc.cc:474:replace_alu$12.C[19]
 .sym 109540 $false
 .sym 109541 $false
 .sym 109542 my_blink.count[18]
-.sym 109543 $auto$alumacc.cc:474:replace_alu$4.C[18]
-.sym 109545 $auto$alumacc.cc:474:replace_alu$4.C[20]
+.sym 109543 $auto$alumacc.cc:474:replace_alu$12.C[18]
+.sym 109545 $auto$alumacc.cc:474:replace_alu$12.C[20]
 .sym 109546 $false
 .sym 109547 $false
 .sym 109548 my_blink.count[19]
-.sym 109549 $auto$alumacc.cc:474:replace_alu$4.C[19]
-.sym 109551 $auto$alumacc.cc:474:replace_alu$4.C[21]
+.sym 109549 $auto$alumacc.cc:474:replace_alu$12.C[19]
+.sym 109551 $auto$alumacc.cc:474:replace_alu$12.C[21]
 .sym 109552 $false
 .sym 109553 $false
 .sym 109554 my_blink.count[20]
-.sym 109555 $auto$alumacc.cc:474:replace_alu$4.C[20]
-.sym 109557 $auto$alumacc.cc:474:replace_alu$4.C[22]
+.sym 109555 $auto$alumacc.cc:474:replace_alu$12.C[20]
+.sym 109557 $auto$alumacc.cc:474:replace_alu$12.C[22]
 .sym 109558 $false
 .sym 109559 $false
 .sym 109560 my_blink.count[21]
-.sym 109561 $auto$alumacc.cc:474:replace_alu$4.C[21]
-.sym 109563 $auto$alumacc.cc:474:replace_alu$4.C[23]
+.sym 109561 $auto$alumacc.cc:474:replace_alu$12.C[21]
+.sym 109563 $auto$alumacc.cc:474:replace_alu$12.C[23]
 .sym 109564 $false
 .sym 109565 $false
 .sym 109566 my_blink.count[22]
-.sym 109567 $auto$alumacc.cc:474:replace_alu$4.C[22]
-.sym 109569 $auto$alumacc.cc:474:replace_alu$4.C[24]
+.sym 109567 $auto$alumacc.cc:474:replace_alu$12.C[22]
+.sym 109569 $auto$alumacc.cc:474:replace_alu$12.C[24]
 .sym 109570 $false
 .sym 109571 $false
 .sym 109572 my_blink.count[23]
-.sym 109573 $auto$alumacc.cc:474:replace_alu$4.C[23]
+.sym 109573 $auto$alumacc.cc:474:replace_alu$12.C[23]
 .sym 109574 $true
 .sym 109575 clk$2$2
 .sym 109576 $false
 .sym 109651 $false
 .sym 109652 $false
 .sym 109653 my_blink.led
-.sym 109654 $auto$alumacc.cc:474:replace_alu$4.C[24]
+.sym 109654 $auto$alumacc.cc:474:replace_alu$12.C[24]
 .sym 109697 $true
 .sym 109698 clk$2$2
 .sym 109699 $false

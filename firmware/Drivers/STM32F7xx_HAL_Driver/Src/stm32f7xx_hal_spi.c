@@ -657,7 +657,7 @@ HAL_StatusTypeDef HAL_SPI_Receive(SPI_HandleTypeDef *hspi, uint8_t *pData, uint1
   uint32_t tickstart = 0U;
   HAL_StatusTypeDef errorcode = HAL_OK;
 
-  if ((hspi->Init.Mode == SPI_MODE_MASTER) && (hspi->Init.Direction == SPI_DIRECTION_2LINES))
+	if ((hspi->Init.Mode == SPI_MODE_MASTER) && (hspi->Init.Direction == SPI_DIRECTION_2LINES))
   {
     hspi->State = HAL_SPI_STATE_BUSY_RX;
     /* Call transmit-receive function to send Dummy data on Tx line and generate clock on CLK line */
