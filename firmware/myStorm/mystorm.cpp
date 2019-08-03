@@ -509,7 +509,8 @@ static int8_t usbcdc_rxcallback(uint8_t *data, uint32_t *len){
 	{
 		if(!g_commandStream.stream(data, *len))
 		{
-			err = HAL_UART_Transmit_DMA(&huart1, data, *len);
+			err = USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+			//err = HAL_UART_Transmit_DMA(&huart1, data, *len);
 			return USBD_OK;
 		}
 	}
