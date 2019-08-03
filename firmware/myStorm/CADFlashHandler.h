@@ -38,7 +38,7 @@ public:
 private:
 
 	void Enable(void);
-	void Disable(void);
+	//void Disable(void);
 
 
 

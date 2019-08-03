@@ -32,25 +32,15 @@ uint8_t CADFlashHandler::write_read(uint8_t *tx, uint8_t *rx, uint32_t len)
 
 void CADFlashHandler::Enable(void)
 {
-	release_flash();
-	free_flash();
-	flash_SPI_Enable();
-
 	uint8_t uCommand = 0xAB;
 	gpio_low (ICE40_SPI_CS);
 	write(&uCommand, 1);
 	gpio_high(ICE40_SPI_CS);
 }
 
-void CADFlashHandler::Disable(void)
-{
-	flash_SPI_Disable();
-}
 
 bool CADFlashHandler::CheckId(void)
 {
-	Enable();
-
 	uint8_t uCommand = 0x9F;
 	uint8_t response[3] = { 0, 0, 0 };
 
@@ -59,8 +49,6 @@ bool CADFlashHandler::CheckId(void)
 	read(response, 3);
 	gpio_high(ICE40_SPI_CS);
 
-	Disable();
-
 	return ((response[0] == 0x1F) && (response[1] == 0x84) && (response[2] == 0x01));
 }
 
@@ -68,6 +56,7 @@ bool CADFlashHandler::init(uint8_t uSubCommand)
 {
 	bool bResult = false;
 	InitBufferedWrite();
+	Enable();
 
 	if (CheckId())
 	{
@@ -176,8 +165,6 @@ bool CADFlashHandler::streamData(uint8_t *data, uint32_t len)
 
 bool CADFlashHandler::IsReady(void)
 {
-
-	Enable();
 	uint8_t uCommand = 0x05;
 	uint8_t response;
 
@@ -185,8 +172,6 @@ bool CADFlashHandler::IsReady(void)
 	write(&uCommand, 1);
 	read(&response, 1);
 	gpio_high(ICE40_SPI_CS);
-
-	Disable();
 
 	return (!(response & 1));
 }
@@ -211,8 +196,6 @@ bool CADFlashHandler::WritePage(uint16_t uPage, uint8_t *pData)
 	write(pData, 256);
 	gpio_high(ICE40_SPI_CS);
 
-	Disable();
-
 	PollForReady();
 
 	return(true);
@@ -220,8 +203,6 @@ bool CADFlashHandler::WritePage(uint16_t uPage, uint8_t *pData)
 
 bool CADFlashHandler::ReadPage(uint16_t uPage, uint8_t *pData)
 {
-	Enable();
-
 	uint8_t uMSB = (uPage >> 8) & 0xFF;
 	uint8_t uLSB = uPage & 0xFF;
 
@@ -232,7 +213,6 @@ bool CADFlashHandler::ReadPage(uint16_t uPage, uint8_t *pData)
 	read(pData, 256);
 	gpio_high(ICE40_SPI_CS);
 
-	Disable();
 	return(true);
 }
 
@@ -248,7 +228,6 @@ bool CADFlashHandler::WriteData(uint32_t uAddr, uint8_t *pData, uint32_t uLen)
 	write(pData, uLen);
 	gpio_high(ICE40_SPI_CS);
 
-	Disable();
 
 	PollForReady();
 	return(true);
@@ -258,8 +237,6 @@ bool CADFlashHandler::ReadData(uint32_t uAddr, uint8_t *pData, uint32_t uLen)
 {
 	PollForReady();
 
-	Enable();
-
 	// just address 0 at the moment
 	gpio_low (ICE40_SPI_CS);
 	uint8_t command[4] = { 0x03, 0x00, 0x00, 0x00 };
@@ -268,14 +245,11 @@ bool CADFlashHandler::ReadData(uint32_t uAddr, uint8_t *pData, uint32_t uLen)
 	read(pData, uLen);
 	gpio_high(ICE40_SPI_CS);
 
-	Disable();
 	return(true);
 }
 
 void CADFlashHandler::WriteEnable(void)
 {
-	Enable();
-
 	uint8_t uCommand = 0x06;
 
 	gpio_low (ICE40_SPI_CS);
@@ -296,7 +270,6 @@ void CADFlashHandler::EraseFlash(void)
 	write(&uCommand, 1);
 	gpio_high(ICE40_SPI_CS);
 
-	Disable();
 
 	PollForReady();
 
@@ -313,8 +286,6 @@ void CADFlashHandler::Erase64K(uint8_t uPage)
 	gpio_low (ICE40_SPI_CS);
 	write(command, 4);
 	gpio_high(ICE40_SPI_CS);
-
-	Disable();
 
 	PollForReady();
 
