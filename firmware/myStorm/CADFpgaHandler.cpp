@@ -120,14 +120,14 @@ bool CADFpgaHandler::init(uint8_t uSubCommand)
 	bool bResult = false;
 	uint8_t err;
 
-	m_uTotalBytes = 0;
+	m_uBytesHandled = 0;
 	status_led_high();
 	flash_SPI_Disable();
 	if (err = reset(MCNTRL))
 		flash_SPI_Enable();
 	else
 	{
-		m_uTotalBytes += 4;
+		m_uBytesHandled += 4;
 		write((uint8_t *) &sig, 4);
 		bResult = true;
 	}
@@ -135,20 +135,21 @@ bool CADFpgaHandler::init(uint8_t uSubCommand)
 	return bResult;
 }
 
-bool CADFpgaHandler::streamData(uint8_t *data, uint32_t len, bool bEndStream)
+bool CADFpgaHandler::streamData(uint8_t *data, uint32_t len)
 {
 	bool bResult = true;
 	uint8_t err;
 
-	m_uTotalBytes += len;
+	m_uBytesHandled += len;
 	write(data, len);
 
-	if (bEndStream || (m_uTotalBytes >= m_uImageSize))
+	if (m_uBytesHandled >= m_uImageSize)
 	{
 		if (err = config())
 			status_led_high();
 		else
 			status_led_low();
+
 		flash_SPI_Enable();
 		bResult = false;
 	}

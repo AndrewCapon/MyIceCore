@@ -15,22 +15,13 @@
 class CADUtilsHandler : public CADCommandHandler
 {
 public:
-	virtual bool streamData(uint8_t *data, uint32_t len, bool bEndStream);
+	virtual bool streamData(uint8_t *data, uint32_t len);
 	virtual bool init(uint8_t uSubCommand);
 
 #ifdef TIMINGS
-	inline bool streamDataInlined(uint8_t *data, uint32_t len, bool bEndStream)
+	inline bool streamDataInlined(uint8_t *data, uint32_t len)
 	{
 		m_uCount+= len;
-		if(bEndStream)
-		{
-			char buffer[128];
-			//sprintf(buffer, "%lu bytes received\n", m_uCount);
-			cdc_puts(buffer);
-			return false;
-		}
-		else
-			return true;
 	}
 #endif
 

@@ -46,7 +46,7 @@ private:
 	uint8_t read(uint8_t *p, uint32_t len);
 	uint8_t write_read(uint8_t *tx, uint8_t *rx, uint32_t len);
 
-	virtual bool streamData(uint8_t *data, uint32_t len, bool bEndStream);
+	virtual bool streamData(uint8_t *data, uint32_t len);
 	virtual bool init(uint8_t uSubCommand);
 
 	SPI_HandleTypeDef *spi;
@@ -55,7 +55,6 @@ private:
 
 	uint32_t m_uCur256BytePage;
 	uint16_t m_uBufferPos;
-	uint32_t m_uTotalBytes;
 	uint8_t  m_buffer[256];
 };
 

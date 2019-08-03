@@ -25,7 +25,8 @@ public:
 	void Init(void);
 	void AddCommandHandler(CommandNibble uCommandNibble, CADCommandHandler *pCommandHandler);
 
-	uint8_t stream(uint8_t *data, uint32_t len);
+	uint8_t  stream(uint8_t *data, uint32_t len);
+	uint32_t GetTimeTaken(void);
 
 private:
 	typedef enum { stDetect, stDetectCommandByte, stDispatch, stProcessing, stError } StreamState;
@@ -37,6 +38,11 @@ private:
 
 	CADCommandHandler		*m_pCurrentCommandHandler;
 	CADCommandHandler 	*m_commandHandlers[16] = {0};
+
+	uint32_t m_uDispatchTime;
+
+	void LogTimeTaken(uint32_t uBytesHandled);
+
 };
 
 #endif /* MYSTORM_CADCOMMANDSTREAM_H_ */

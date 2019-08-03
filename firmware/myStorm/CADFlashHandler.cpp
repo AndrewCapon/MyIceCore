@@ -67,6 +67,7 @@ bool CADFlashHandler::CheckId(void)
 bool CADFlashHandler::init(uint8_t uSubCommand)
 {
 	bool bResult = false;
+	InitBufferedWrite();
 
 	if (CheckId())
 	{
@@ -101,14 +102,14 @@ bool CADFlashHandler::init(uint8_t uSubCommand)
 
 void CADFlashHandler::InitBufferedWrite(void)
 {
-	m_uTotalBytes = 0;
+	m_uBytesHandled = 0;
 	m_uCur256BytePage = 0;
 	m_uBufferPos = 0;
 }
 
 void CADFlashHandler::BufferedWrite(uint8_t *pData, uint32_t uLen)
 {
-	m_uTotalBytes += uLen;
+	m_uBytesHandled += uLen;
 
 	while (uLen)
 	{
@@ -145,11 +146,11 @@ void CADFlashHandler::FlushBuffer(void)
 		WritePage(m_uCur256BytePage, m_buffer);
 }
 
-bool CADFlashHandler::streamData(uint8_t *data, uint32_t len, bool bEndStream)
+bool CADFlashHandler::streamData(uint8_t *data, uint32_t len)
 {
 	bool bResult = true;
 
-	if (!m_uTotalBytes) // bodge lookat doing properly
+	if (!m_uBytesHandled) // bodge lookat doing properly
 	{
 		// skip 4 byte header
 		data += 4;
@@ -158,7 +159,7 @@ bool CADFlashHandler::streamData(uint8_t *data, uint32_t len, bool bEndStream)
 
 	BufferedWrite(data, len);
 
-	if (bEndStream || (m_uTotalBytes >= (IMGSIZE)))
+	if (m_uBytesHandled >= IMGSIZE)
 	{
 //		if(err = config())
 //			status_led_high();

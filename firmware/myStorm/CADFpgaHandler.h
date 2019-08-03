@@ -20,11 +20,12 @@ public:
 	uint8_t config(void);
 	uint8_t write(uint8_t *p, uint32_t len);
 	uint8_t stream(uint8_t *data, uint32_t len);
-	virtual bool streamData(uint8_t *data, uint32_t len, bool bEndStream);
+	virtual bool streamData(uint8_t *data, uint32_t len);
 	virtual bool init(uint8_t uSubCommand);
 
 #ifdef TIMINGS
-		inline bool streamDataInlined(uint8_t *data, uint32_t len, bool bEndStream){
+		inline bool streamDataInlined(uint8_t *data, uint32_t len)
+		{
 			bool bResult = true;
 
 			nbytes += len;
@@ -46,7 +47,6 @@ public:
 
 private:
 	uint32_t m_uImageSize;
-	uint32_t m_uTotalBytes;
 	uint8_t sig[4] = { 0x7E, 0xAA, 0x99, 0x7E };
 
 };

@@ -241,12 +241,12 @@ loop(void)
 
 	//cdc_puts("Waiting for USB serial\n");
 
-	uTick = HAL_GetTick();
-	if(uTick > uOldTick+1000)
-	{
-		cdc_puts("Tick changed (1000 ms)\n");
-		uOldTick = uTick;
-	}
+//	uTick = HAL_GetTick();
+//	if(uTick > uOldTick+1000)
+//	{
+//		cdc_puts("Tick changed (1000 ms)\n");
+//		uOldTick = uTick;
+//	}
 
 #ifdef CADFirmware
 	if(gpio_ishigh(MODE_BOOT))

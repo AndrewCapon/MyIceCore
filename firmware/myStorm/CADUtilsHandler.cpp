@@ -20,7 +20,7 @@ bool CADUtilsHandler::init(uint8_t uSubCommand)
 	return false;
 }
 
-bool CADUtilsHandler::streamData(uint8_t *data, uint32_t len, bool bEndStream)
+bool CADUtilsHandler::streamData(uint8_t *data, uint32_t len)
 {
 	return false;
 }
