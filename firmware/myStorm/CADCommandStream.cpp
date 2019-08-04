@@ -69,7 +69,7 @@ void logNumber(char *pStr, uint32_t uNum)
 
 }
 
-void CADCommandStream::LogTimeTaken(uint32_t uBytesHandled)
+void CADCommandStream::LogTimeTaken(CADCommandHandler::StreamResult result, uint32_t uBytesHandled)
 {
 	// log time taken
 	char timeBuffer[128];
@@ -81,7 +81,8 @@ void CADCommandStream::LogTimeTaken(uint32_t uBytesHandled)
 	ultoa(uBytesHandled, bytesBuffer,10);
 
 	char buffer[256];
-	strcpy(buffer, bytesBuffer);
+	strcpy(buffer, CADCommandHandler::GetStreamResultString(result));
+	strcat(buffer, bytesBuffer);
 	strcat(buffer, " bytes handled, took: ");
 	strcat(buffer, timeBuffer);
 	strcat(buffer, "ms\n");
@@ -135,6 +136,7 @@ uint8_t CADCommandStream::stream(uint8_t *data, uint32_t len)
 
 	if(m_state == stDispatch)
 	{
+		m_uRetryCount = 0;
 		m_uDispatchTime = HAL_GetTick();
 
 		m_pCurrentCommandHandler = m_commandHandlers[uCommandByte>>4];
@@ -145,7 +147,7 @@ uint8_t CADCommandStream::stream(uint8_t *data, uint32_t len)
 			else
 			{
 				m_state = stDetect;
-				LogTimeTaken(0);
+				LogTimeTaken(CADCommandHandler::srFinish, 0);
 			}
 		}
 		else
@@ -154,11 +156,31 @@ uint8_t CADCommandStream::stream(uint8_t *data, uint32_t len)
 
 	if(m_state == stProcessing)
 	{
-		if(!m_pCurrentCommandHandler->streamData(pScanPos, len - (pScanPos - data)))
+		m_dataStream.AddData(pScanPos, len - (pScanPos - data));
+		CADCommandHandler::StreamResult result = m_pCurrentCommandHandler->streamData(m_dataStream);
+
+		switch(result)
 		{
-			// handler has finished go back to detect state
-			m_state = stDetect;
-			LogTimeTaken(m_pCurrentCommandHandler->GetBytesHandled());
+			case CADCommandHandler::srError:
+			case CADCommandHandler::srFinish:
+			{
+				// handler has finished or failed go back to detect state
+				m_state = stDetect;
+				LogTimeTaken(result, m_pCurrentCommandHandler->GetBytesHandled());
+			}
+			break;
+
+			case CADCommandHandler::srNeedData:
+				m_uRetryCount++;
+				if(m_uRetryCount > 1)
+				{
+					m_state = stDetect;
+					LogTimeTaken(result, m_pCurrentCommandHandler->GetBytesHandled());
+				}
+			break;
+
+			case CADCommandHandler::srContinue:
+			break;
 		}
 	}
 

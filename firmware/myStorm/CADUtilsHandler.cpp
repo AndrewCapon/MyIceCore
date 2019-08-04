@@ -7,7 +7,6 @@
 
 #include "CADUtilsHandler.h"
 
-
 bool CADUtilsHandler::init(uint8_t uSubCommand)
 {
 	switch(uSubCommand)
@@ -20,7 +19,8 @@ bool CADUtilsHandler::init(uint8_t uSubCommand)
 	return false;
 }
 
-bool CADUtilsHandler::streamData(uint8_t *data, uint32_t len)
+
+CADCommandHandler::StreamResult CADUtilsHandler::streamData(CADDataStream &dataStream)
 {
-	return false;
+	return srFinish;
 }

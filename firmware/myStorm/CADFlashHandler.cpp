@@ -6,12 +6,100 @@
  */
 
 #include "CADFlashHandler.h"
+#include "CADDataStream.h"
 #include "mystorm.h"
 
 CADFlashHandler::CADFlashHandler(SPI_HandleTypeDef *hspi)
 {
 	spi = hspi;
 }
+
+
+bool CADFlashHandler::init(uint8_t uSubCommand)
+{
+	bool bResult = false;
+
+	m_subCommand = (SubCommand)uSubCommand;
+
+	InitBufferedWrite();
+	Enable();
+
+	if (CheckId())
+	{
+		switch(uSubCommand)
+		{
+			case scEraseFlash: // erase flash
+				EraseFlash();
+				bResult = false;
+			break;
+
+			case scProgramBitstream: // Program flash with bitsream
+				Erase64K(0);
+				Erase64K(1);
+				Erase64K(2);
+				bResult = true;
+			break;
+
+			case scQueryFlash: // Query flash
+					cdc_puts((char *)"AT25SF041 Flash Found\n");
+			break;
+
+			case scProgramData: // Write to page (4k)
+			break;
+
+			default:
+				bResult = false;
+		}
+	}
+	else
+		cdc_puts((char *)"Error: AT25SF041 Flash NotFound\n");
+
+
+	return bResult;
+}
+
+CADCommandHandler::StreamResult CADFlashHandler::streamData(CADDataStream &dataStream)
+{
+	StreamResult result = srContinue;
+
+	switch(m_subCommand)
+	{
+		case scProgramBitstream: // Program flash with bitsream
+		{
+			if (!m_uBytesHandled) // bodge lookat doing properly
+			{
+				// skip 4 byte header
+				uint32_t uHeader;
+				if(dataStream.Get(uHeader))
+				{
+					if(uHeader != 0xff0000ff)
+						result = srError;
+				}
+			}
+
+			if(result == srContinue)
+			{
+				BufferedWrite(dataStream);
+
+				if (m_uBytesHandled >= IMGSIZE)
+				{
+					FlushBuffer();
+					result = srFinish;
+				}
+			}
+		}
+		break;
+
+		case scProgramData:
+		{
+
+		}
+		break;
+	};
+	return result;
+
+}
+
 
 #define MYTIMEOUT 1000
 
@@ -52,42 +140,6 @@ bool CADFlashHandler::CheckId(void)
 	return ((response[0] == 0x1F) && (response[1] == 0x84) && (response[2] == 0x01));
 }
 
-bool CADFlashHandler::init(uint8_t uSubCommand)
-{
-	bool bResult = false;
-	InitBufferedWrite();
-	Enable();
-
-	if (CheckId())
-	{
-		switch(uSubCommand)
-		{
-			case 0: // erase flash
-				EraseFlash();
-				bResult = false;
-			break;
-
-			case 1: // Program flash with bitsream
-				Erase64K(0);
-				Erase64K(1);
-				Erase64K(2);
-				bResult = true;
-			break;
-
-			case 2: // Query flash
-					cdc_puts((char *)"AT25SF041 Flash Found\n");
-			break;
-
-			default:
-				bResult = false;
-		}
-	}
-	else
-		cdc_puts((char *)"Error: AT25SF041 Flash NotFound\n");
-
-
-	return bResult;
-}
 
 void CADFlashHandler::InitBufferedWrite(void)
 {
@@ -129,38 +181,20 @@ void CADFlashHandler::BufferedWrite(uint8_t *pData, uint32_t uLen)
 	}
 }
 
+void CADFlashHandler::BufferedWrite(CADDataStream &dataStream)
+{
+	uint8_t *pData = NULL;
+	uint32_t uLen  = 0;
+
+	dataStream.GetStreamData(&pData, &uLen);
+
+	BufferedWrite(pData, uLen);
+}
+
 void CADFlashHandler::FlushBuffer(void)
 {
 	if (m_uBufferPos)
 		WritePage(m_uCur256BytePage, m_buffer);
-}
-
-bool CADFlashHandler::streamData(uint8_t *data, uint32_t len)
-{
-	bool bResult = true;
-
-	if (!m_uBytesHandled) // bodge lookat doing properly
-	{
-		// skip 4 byte header
-		data += 4;
-		len -= 4;
-	}
-
-	BufferedWrite(data, len);
-
-	if (m_uBytesHandled >= IMGSIZE)
-	{
-//		if(err = config())
-//			status_led_high();
-//		else
-//			status_led_low();
-
-		FlushBuffer();
-		bResult = false;
-	}
-
-	return bResult;
-
 }
 
 bool CADFlashHandler::IsReady(void)

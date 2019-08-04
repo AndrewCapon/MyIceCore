@@ -15,7 +15,7 @@
 class CADUtilsHandler : public CADCommandHandler
 {
 public:
-	virtual bool streamData(uint8_t *data, uint32_t len);
+	virtual StreamResult streamData(CADDataStream &dataStream);
 	virtual bool init(uint8_t uSubCommand);
 
 #ifdef TIMINGS

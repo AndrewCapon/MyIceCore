@@ -14,7 +14,8 @@ CPP	= mystorm.cpp \
 	  CADCommandStream.cpp \
 	  CADUtilsHandler.cpp \
 	  CADFlashHandler.cpp \
-	  CADFpgaHandler.cpp
+	  CADFpgaHandler.cpp \
+	  CADDataStream.cpp
 	  
 OCDCONFIG = stlink.cfg
 OCD = /Applications/Eclipse.app/Contents/Eclipse/plugins/fr.ac6.mcu.externaltools.openocd.macos64_1.23.0.201904120827/tools/openocd/bin/openocd

@@ -7,3 +7,4 @@
 
 #include "CADCommandHandler.h"
 
+constexpr char *CADCommandHandler::StreamResultStrings[4];

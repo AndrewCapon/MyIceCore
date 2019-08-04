@@ -20,7 +20,10 @@ public:
 	uint8_t config(void);
 	uint8_t write(uint8_t *p, uint32_t len);
 	uint8_t stream(uint8_t *data, uint32_t len);
-	virtual bool streamData(uint8_t *data, uint32_t len);
+
+	bool write(CADDataStream &dataStream);
+
+	virtual StreamResult streamData(CADDataStream &dataStream);
 	virtual bool init(uint8_t uSubCommand);
 
 #ifdef TIMINGS

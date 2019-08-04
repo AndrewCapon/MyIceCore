@@ -9,12 +9,22 @@
 #define MYSTORM_CADCOMMANDHANDLER_H_
 
 #include "CAD.h"
+#include "CADDataStream.h"
 
 class CADCommandHandler
 {
 public:
-	virtual bool streamData(uint8_t *data, uint32_t len) = 0;
-	virtual bool init(uint8_t uSubCommand) = 0;
+	typedef enum { srError, srContinue, srFinish, srNeedData } StreamResult;
+
+	static constexpr char *StreamResultStrings[4] = { (char *)"Error:", (char *)"Continue:", (char *)"Finish:", (char *)"NeedData:" };
+
+	static char *GetStreamResultString(StreamResult result)
+	{
+		return CADCommandHandler::StreamResultStrings[result];
+	}
+
+	virtual StreamResult 	streamData(CADDataStream &dataStream) = 0;
+	virtual bool 	 				init(uint8_t uSubCommand) = 0;
 
 	uint32_t GetBytesHandled(void)
 	{

@@ -9,8 +9,9 @@
 #define MYSTORM_CADCOMMANDSTREAM_H_
 
 #include "CAD.h"
+#include "CADDataStream.h"
 
-class CADCommandHandler;
+#include "CADCommandHandler.h"
 
 class CADCommandStream
 {
@@ -41,7 +42,11 @@ private:
 
 	uint32_t m_uDispatchTime;
 
-	void LogTimeTaken(uint32_t uBytesHandled);
+	CADDataStream	m_dataStream;
+
+	uint8_t m_uRetryCount = 0;
+
+	void LogTimeTaken(CADCommandHandler::StreamResult result, uint32_t uBytesHandled);
 
 };
 

@@ -114,6 +114,18 @@ uint8_t CADFpgaHandler::write(uint8_t *p, uint32_t len)
 	return ret;
 }
 
+bool CADFpgaHandler::write(CADDataStream &dataStream)
+{
+	bool bResult = true;
+
+	uint8_t 	*pData = NULL;
+	uint32_t 	uLen   = 0;
+
+	if((bResult = dataStream.GetStreamData(&pData, &uLen)))
+			write(pData, uLen);
+
+	return bResult;
+}
 
 bool CADFpgaHandler::init(uint8_t uSubCommand)
 {
@@ -123,7 +135,7 @@ bool CADFpgaHandler::init(uint8_t uSubCommand)
 	m_uBytesHandled = 0;
 	status_led_high();
 	flash_SPI_Disable();
-	if (err = reset(MCNTRL))
+	if ((err = reset(MCNTRL)))
 		flash_SPI_Enable();
 	else
 	{
@@ -135,25 +147,26 @@ bool CADFpgaHandler::init(uint8_t uSubCommand)
 	return bResult;
 }
 
-bool CADFpgaHandler::streamData(uint8_t *data, uint32_t len)
+CADCommandHandler::StreamResult CADFpgaHandler::streamData(CADDataStream &dataStream)
 {
-	bool bResult = true;
+	CADCommandHandler::StreamResult result = CADCommandHandler::srContinue;
 	uint8_t err;
 
-	m_uBytesHandled += len;
-	write(data, len);
+	m_uBytesHandled += dataStream.GetStreamLength();
+
+	write(dataStream);
 
 	if (m_uBytesHandled >= m_uImageSize)
 	{
-		if (err = config())
+		if ((err = config()))
 			status_led_high();
 		else
 			status_led_low();
 
 		flash_SPI_Enable();
-		bResult = false;
+		result = CADCommandHandler::srFinish;
 	}
 
-	return bResult;
+	return result;
 }
 
