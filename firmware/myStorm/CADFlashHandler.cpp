@@ -120,6 +120,10 @@ uint8_t CADFlashHandler::write_read(uint8_t *tx, uint8_t *rx, uint32_t len)
 
 void CADFlashHandler::Enable(void)
 {
+	release_flash();
+	free_flash();
+	flash_SPI_Enable();
+
 	uint8_t uCommand = 0xAB;
 	gpio_low (ICE40_SPI_CS);
 	write(&uCommand, 1);

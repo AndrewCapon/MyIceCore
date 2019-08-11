@@ -15,6 +15,7 @@
 
 TTY  = /dev/cu.usbmodem00000000001A1
 
+
 chip.bin: hdl/* MyTopLevel.v 
 	yosys -q -p "synth_ice40 -blif chip.blif" hdl/*.v MyTopLevel.v
 	arachne-pnr -d 8k -P tq144:4k -p hdl/chip.pcf chip.blif -o chip.txt
@@ -26,7 +27,7 @@ MyTopLevel.v: src/main/scala/mylib/*.scala
 .PHONY: upload
 upload:
 	stty -f $(TTY) raw
-	cat chip.bin > $(TTY)
+	cat chip.bin flash.bin chip.bin reset.bin > $(TTY)
 
 .PHONY: clean
 clean:

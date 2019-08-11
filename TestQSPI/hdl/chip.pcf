@@ -5,3 +5,21 @@ set_io led[1] 52 # B82/GBin4 L1 Green led / S1 button
 set_io led[2] 55 # B91 L3 Yellow led
 set_io led[3] 56 # B94 cs Red led
  
+
+# QSpi
+set_io io0 73
+set_io io1 74
+set_io dcs 75
+set_io dsck 76
+
+
+set_io dbg_io0  106
+set_io dbg_io1  105
+set_io dbg_ss   101
+set_io dbg_sclk 99
+
+set_io dbg_1  19
+set_io dbg_2  20
+set_io dbg_3  23
+set_io dbg_4  24
+

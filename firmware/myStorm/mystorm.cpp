@@ -56,6 +56,7 @@ extern SPI_HandleTypeDef hspi3;
 extern USBD_HandleTypeDef hUsbDeviceFS;
 extern UART_HandleTypeDef huart1;
 extern TIM_HandleTypeDef htim6;
+extern QSPI_HandleTypeDef hqspi;
 
 // #define DMA_BYTES 2048
 // #define DMAH (DMA_BYTES / 2)
@@ -149,6 +150,9 @@ CADCommandStream                                        g_commandStream;
 Fpga Ice40(IMGSIZE);
 Flash flash(&hspi3, IMGSIZE);
 #endif
+
+
+
 /*
  * Setup function (called once at powerup)
  */
@@ -207,6 +211,8 @@ setup(void)
 
 	err = USBD_CDC_ReceivePacket(&hUsbDeviceFS);
 	errors += err ? 1 : 0;
+
+
 }
 
 
@@ -246,6 +252,59 @@ loop(void)
 //		cdc_puts("Tick changed (1000 ms)\n");
 //		uOldTick = uTick;
 //	}
+
+	//HAL_QSPI_Transmit(hqspi, buffer,1000);
+
+  QSPI_CommandTypeDef     sCommand;
+  QSPI_AutoPollingTypeDef sConfig;
+
+#define COUNT 4
+  /* Enable write operations ------------------------------------------ */
+  sCommand.InstructionMode   = QSPI_INSTRUCTION_1_LINE;
+  sCommand.Instruction       = 0x01;
+  sCommand.AddressMode       = QSPI_ADDRESS_NONE;
+  sCommand.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
+  sCommand.DataMode          = QSPI_DATA_1_LINE;
+  sCommand.DummyCycles       = 0;
+  sCommand.DdrMode           = QSPI_DDR_MODE_DISABLE;
+  sCommand.DdrHoldHalfCycle  = QSPI_DDR_HHC_ANALOG_DELAY;
+  sCommand.SIOOMode          = QSPI_SIOO_INST_EVERY_CMD;
+  sCommand.NbData       		 = COUNT;
+
+
+  // Send Data
+  uint8_t txData[16] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+
+  if (HAL_QSPI_Command(&hqspi, &sCommand, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  if(HAL_QSPI_Transmit(&hqspi, txData, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+  {
+  	Error_Handler();
+  }
+
+
+  // Receive Data
+  sCommand.Instruction       = 0x02;
+
+  if (HAL_QSPI_Command(&hqspi, &sCommand, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  uint8_t rxData[16] = {0};
+  if(HAL_QSPI_Receive(&hqspi, rxData, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+
+//  // Compare Data
+//  for(int i =0; i < COUNT; i++)
+//  	if(txData[i] != rxData[i])
+//  		Error_Handler();
 
 #ifdef CADFirmware
 	if(gpio_ishigh(MODE_BOOT))
