@@ -129,6 +129,7 @@ class MyTopLevel extends Component
       .whenIsActive{
         when(rxValidEdges.rise)
         {
+          io.dbg_3 := True;
           mem(counter) := qspiSlaveCtrl.io.rx.payload;
           counter.increment()
         }      
@@ -141,7 +142,6 @@ class MyTopLevel extends Component
     stateSend
       .onEntry(counter := 0)
       .whenIsActive{
-        io.dbg_3 := True;
         when(txReadyEdges.rise || counter === 0)
         {
           io.dbg_4 := True;

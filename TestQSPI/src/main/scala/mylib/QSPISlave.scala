@@ -59,7 +59,6 @@ case class QspiSlaveCtrl(generics : QspiSlaveCtrlGenerics) extends Component{
   //Input filter
   val spi = io.spi.slaveResync()
   val normalizedSclkEdges = (spi.sclk ^ io.kind.cpol ^ io.kind.cpha).edges()
-  val shit = spi.sclk ^ io.kind.cpol ^ io.kind.cpha;
 
   //FSM
   val counter = Counter(dataWidth*2)

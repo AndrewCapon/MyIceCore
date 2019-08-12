@@ -259,11 +259,10 @@ loop(void)
   QSPI_CommandTypeDef     sCommand;
   QSPI_AutoPollingTypeDef sConfig;
 
-#define COUNT 5
+#define COUNT 8
   /* Enable write operations ------------------------------------------ */
   sCommand.InstructionMode   = QSPI_INSTRUCTION_1_LINE;
   sCommand.Instruction       = 0x01;
-  sCommand.AddressMode       = QSPI_ADDRESS_NONE;
   sCommand.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
   sCommand.DataMode          = QSPI_DATA_1_LINE;
   sCommand.DummyCycles       = 0;
@@ -272,6 +271,14 @@ loop(void)
   sCommand.SIOOMode          = QSPI_SIOO_INST_EVERY_CMD;
   sCommand.NbData       		 = COUNT;
 
+  //sCommand.AddressMode       = QSPI_ADDRESS_1_LINE;
+  //sCommand.Address					 = 0x01020304;
+
+
+  //sCommand.AddressMode       = QSPI_ADDRESS_NONE;
+  //sCommand.DataMode          = QSPI_DATA_NONE;
+
+  sCommand.AddressMode       = QSPI_ADDRESS_NONE;
 
   // Send Data
   uint8_t txData[16] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
@@ -288,29 +295,32 @@ loop(void)
   }
 
   // Receive Data
-//  sCommand.Instruction       = 0x02;
-//
-//  if (HAL_QSPI_Command(&hqspi, &sCommand, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
-//  {
-//    Error_Handler();
-//  }
-//
-//
-//  uint8_t rxData[COUNT] = {0};
-//  if(HAL_QSPI_Receive(&hqspi, rxData, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
-//  {
-//    Error_Handler();
-//  }
-//
-//
-//  // Compare Data
-//  bool bDiff = false;
-//  for(int i =0; i < COUNT; i++)
-//  	if(txData[i] != rxData[i])
-//  		bDiff = true;
-//
-//  if(bDiff)
-//		cdc_puts((char *)"*");
+  sCommand.Instruction       = 0x02;
+
+  if (HAL_QSPI_Command(&hqspi, &sCommand, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+
+  uint8_t rxData[COUNT] = {0};
+  if(HAL_QSPI_Receive(&hqspi, rxData, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+
+  // Compare Data
+  bool bDiff = false;
+  for(int i =0; i < COUNT; i++)
+  	if(txData[i] != rxData[i])
+  		bDiff = true;
+
+  if(bDiff)
+		cdc_puts((char *)"*");
+  else
+		cdc_puts((char *)".");
+
 
 
   uCount++;

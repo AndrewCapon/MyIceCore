@@ -103,7 +103,7 @@ frequency_divider_by2 clock_6_25(
     .io_dbg_2(dbg_2),
     .io_dbg_3(dbg_3),
     .io_dbg_4(dbg_4),
-    .clk(clk6_25),
+    .clk(clk12_5),
     .reset(0),
   );
 
