@@ -47,25 +47,44 @@ module chip (
 
   );
 
-  wire clk16;
-  wire clk8;
-  wire clk4;
+  wire clk200;
+  wire clk100;
+  wire clk50;
+  wire clk25;
+  wire clk12_5;
+  wire clk6_25;
+  
   wire locked;
 
-  pll clock_16 (
+  pll clock_200 (
     .clock_in(clk),
-    .clock_out(clk16),
+    .clock_out(clk200),
     .locked(locked)
   );
   
-  frequency_divider_by2 clock_8(
-    .clk(clk16),
-    .out_clk(clk8)
+  frequency_divider_by2 clock_100(
+    .clk(clk200),
+    .out_clk(clk100)
   );
 
-  frequency_divider_by2 clock_4(
-    .clk(clk8),
-    .out_clk(clk4)
+  frequency_divider_by2 clock_50(
+    .clk(clk100),
+    .out_clk(clk50)
+  );
+
+frequency_divider_by2 clock_25(
+    .clk(clk50),
+    .out_clk(clk25)
+  );
+
+frequency_divider_by2 clock_12_5(
+    .clk(clk25),
+    .out_clk(clk12_5)
+  );
+
+frequency_divider_by2 clock_6_25(
+    .clk(clk12_5),
+    .out_clk(clk6_25)
   );
 
   MyTopLevel top_level (
@@ -84,7 +103,7 @@ module chip (
     .io_dbg_2(dbg_2),
     .io_dbg_3(dbg_3),
     .io_dbg_4(dbg_4),
-    .clk(clk8),
+    .clk(clk6_25),
     .reset(0),
   );
 

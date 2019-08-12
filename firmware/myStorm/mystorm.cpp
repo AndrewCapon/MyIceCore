@@ -227,6 +227,7 @@ uint32_t uOldTick = 0;
 void
 loop(void)
 {
+	static uint32_t uCount = 0;
 	char buffer[16];
 	// uint8_t b = 0;
 
@@ -258,7 +259,7 @@ loop(void)
   QSPI_CommandTypeDef     sCommand;
   QSPI_AutoPollingTypeDef sConfig;
 
-#define COUNT 4
+#define COUNT 5
   /* Enable write operations ------------------------------------------ */
   sCommand.InstructionMode   = QSPI_INSTRUCTION_1_LINE;
   sCommand.Instruction       = 0x01;
@@ -280,32 +281,39 @@ loop(void)
     Error_Handler();
   }
 
+
   if(HAL_QSPI_Transmit(&hqspi, txData, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
   {
-  	Error_Handler();
+  	//Error_Handler();
   }
-
 
   // Receive Data
-  sCommand.Instruction       = 0x02;
-
-  if (HAL_QSPI_Command(&hqspi, &sCommand, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  uint8_t rxData[16] = {0};
-  if(HAL_QSPI_Receive(&hqspi, rxData, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-
+//  sCommand.Instruction       = 0x02;
+//
+//  if (HAL_QSPI_Command(&hqspi, &sCommand, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
+//
+//
+//  uint8_t rxData[COUNT] = {0};
+//  if(HAL_QSPI_Receive(&hqspi, rxData, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
+//
+//
 //  // Compare Data
+//  bool bDiff = false;
 //  for(int i =0; i < COUNT; i++)
 //  	if(txData[i] != rxData[i])
-//  		Error_Handler();
+//  		bDiff = true;
+//
+//  if(bDiff)
+//		cdc_puts((char *)"*");
 
+
+  uCount++;
 #ifdef CADFirmware
 	if(gpio_ishigh(MODE_BOOT))
 	{

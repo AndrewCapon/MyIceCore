@@ -63,10 +63,10 @@ class MyTopLevel extends Component
   io.io1                      := qspiSlaveCtrl.io.spi.io1.write;
   
 
-  io.leds(0) := ledGlow.io.led;            // blue
-  io.leds(1) := qspiSlaveCtrl.io.rx.valid;   // green
-  io.leds(2) := qspiSlaveCtrl.io.tx.ready;  // yellow
-  io.leds(3) := True;  // red
+  io.leds(0) := !io.io0;            // blue
+  io.leds(1) := !io.io1;   // green
+  io.leds(2) := !io.ss;  // yellow
+  io.leds(3) := !io.sclk;  // red
 
   io.dbg_io0  := io.io0
   io.dbg_io1  := io.io1
@@ -100,6 +100,9 @@ class MyTopLevel extends Component
 
     stateWaitSS
       .whenIsActive{
+        // mem(counter) := counter.asBits;
+        // counter.increment()
+
         when(io.ss === False){
           sendByte := 0
           goto(stateDecode)
