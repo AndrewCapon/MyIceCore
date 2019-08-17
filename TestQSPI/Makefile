@@ -18,7 +18,7 @@ TTY  = /dev/cu.usbmodem00000000001A1
 
 chip.bin: hdl/* MyTopLevel.v 
 	yosys -q -p "synth_ice40 -blif chip.blif" hdl/*.v MyTopLevel.v
-	arachne-pnr -d 8k -P tq144:4k -p hdl/chip.pcf chip.blif -o chip.txt
+	arachne-pnr -m 2000 -r -d 8k -P tq144:4k -p hdl/chip.pcf chip.blif -o chip.txt
 	icepack chip.txt chip.bin
 
 MyTopLevel.v: src/main/scala/mylib/*.scala

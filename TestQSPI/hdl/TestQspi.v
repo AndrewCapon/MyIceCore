@@ -1,0 +1,173 @@
+// QSPI example:
+//   Use Quad SPI interface to send switch settings from slave to master
+//   and read LED settings from master to slave.
+
+// Assume QSPI clock mode is 3 (CPOL=CPHA=1)
+//   Clock idle state is high when QSS is high (deselected)
+//   Both master and slave sample data on rising clock edge
+
+module swtoleds (
+	input CLK100,
+	input [3:0] SWITCH,
+	output [4:1] LEDS,
+	input QCK, QSS,
+	inout [3:0] QD
+);
+
+	reg writing;
+	wire clk = CLK100;
+	reg [3:0] leds;
+	assign {LEDS[1],LEDS[2],LEDS[3],LEDS[4]} = leds;
+	reg [7:0] spi_txdata, spi_rxdata;
+	wire spi_txready, spi_rxready;
+
+	// synchronise chip select signal, to switch from reading to writing
+	reg [2:0] select;
+	always @(posedge clk)
+		select <= {select[1:0],~QSS};
+	wire deselect = (select[1:0] == 2'b10);
+
+	// tri-state control for QSPI data lines
+	wire [3:0] qdin, qdout;
+	assign qdin = QD;
+	assign QD = writing ? qdout : 4'bz;
+
+	// state machine to alternate reading and writing
+	always @(posedge clk) case (writing)
+	0: begin
+		// receive LED settings
+		if (spi_rxready)
+			leds <= spi_rxdata[3:0];
+		// when chip select rises, switch to writing state
+		if (deselect) begin
+			spi_txdata <= {4'b0,~SWITCH};
+			writing <= 1;
+		end
+	   end
+	1: begin
+		if (deselect)
+			writing <= 0;
+	   end
+	endcase
+
+	qspislave_tx #(.DWIDTH(4)) QT (
+		.clk(clk),
+		.txdata(spi_txdata),
+		.txready(spi_txready),
+		.QCK(QCK),
+		.QSS(QSS),
+		.QD(qdout)
+	);
+	qspislave_rx #(.DWIDTH(4)) QR (
+		.clk(clk),
+		.rxdata(spi_rxdata),
+		.rxready(spi_rxready),
+		.QCK(QCK),
+		.QSS(QSS),
+		.QD(qdin)
+	);
+
+endmodule
+
+// Receive QSPI data from master to slave
+// DWIDTH (1 or 4) is number of data lines
+// rxready is asserted for one clk period
+//   when each input byte is available in rxdata
+
+module qspislave_rx #(parameter DWIDTH=1) (
+	input clk,
+	input QCK, QSS,
+	input [3:0] QD,
+	output rxready,
+	output [7:0] rxdata,
+//	output [3:0] dbg
+);
+
+	// registers in QCK clock domain
+	reg [8:0] shiftreg;
+	reg inseq;
+
+	// registers in main clk domain
+	reg [7:0] inbuf;
+	assign rxdata = inbuf;
+	reg [2:0] insync;
+
+	// synchronise inseq across clock domains
+	always @(posedge clk)
+		insync <= {inseq,insync[2:1]};
+	assign rxready = (insync[1] != insync[0]);
+
+	// wiring to load data from 1 or 4 data lines into shiftreg
+	wire [8:0] shiftin = {shiftreg[8-DWIDTH:0],QD[DWIDTH-1:0]};
+
+//	reg [3:0] r_dbg;
+//	assign dbg = r_dbg;
+
+	// capture incoming data on rising SPI clock edge
+	always @(posedge QCK or posedge QSS) begin
+		if (QSS) begin
+			shiftreg <= 0;
+		end else begin
+			if (shiftin[8]) begin
+				inbuf <= shiftin[7:0];
+				inseq <= ~inseq;
+				shiftreg <= 0;
+			end else if (shiftreg[7:0] == 0) begin
+				shiftreg = {1'b1,QD[DWIDTH-1:0]};
+			end else begin
+				shiftreg <= shiftin;
+			end
+		end
+	end
+endmodule
+
+// Transmit QSPI data from slave to master
+// txready is asserted for one clk period
+//   when one output byte has been sent from txdata,
+//   and the next byte must be supplied before the next
+//   rising edge of QCK
+
+module qspislave_tx #(parameter DWIDTH=1) (
+	input clk,
+	input QCK, QSS,
+	output [3:0] QD,
+	output txready,
+	input [7:0] txdata,
+	//output [1:0] dbg
+);
+	// reg [1:0] r_dbg;
+	// assign dbg = r_dbg;
+
+	// registers in QCK clock domain
+	reg [8:0] shiftreg;
+	reg outseq;
+	assign QD[3:0] = shiftreg[8:9-DWIDTH];
+
+	// registers in main clk domain
+	reg [2:0] outsync;
+
+	// synchronise outseq across clock domains
+	always @(posedge clk)
+		outsync <= {outseq,outsync[2:1]};
+	assign txready = (outsync[1] != outsync[0]);
+
+	// wiring to shift data from shiftreg into 1 or 4 data lines
+	wire [8:0] shiftout = shiftreg << DWIDTH;
+
+	// shift outgoing data on falling SPI clock edge
+	always @(negedge QCK or posedge QSS) begin
+//		r_dbg <=0;
+		if (QSS) begin
+			shiftreg <= 0;
+		end else begin
+			if (shiftout[7:0] == 0) begin
+//				r_dbg[0] <=1;
+				outseq <= ~outseq;
+				shiftreg <= {txdata,1'b1};
+			end else begin
+//				r_dbg[1] <=1;
+				shiftreg <= shiftout;
+			end
+		end
+	end
+endmodule

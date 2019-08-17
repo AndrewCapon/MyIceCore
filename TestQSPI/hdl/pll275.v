@@ -6,11 +6,11 @@
  * Use at your own risk.
  *
  * Given input frequency:        25.000 MHz
- * Requested output frequency:  200.000 MHz
- * Achieved output frequency:   200.000 MHz
+ * Requested output frequency:  275.000 MHz
+ * Achieved output frequency:   275.000 MHz
  */
 
-module pll(
+module pll275(
 	input  clock_in,
 	output clock_out,
 	output locked
@@ -19,8 +19,8 @@ module pll(
 SB_PLL40_CORE #(
 		.FEEDBACK_PATH("SIMPLE"),
 		.DIVR(4'b0000),		// DIVR =  0
-		.DIVF(7'b0011111),	// DIVF = 31
-		.DIVQ(3'b010),		// DIVQ =  2
+		.DIVF(7'b0010101),	// DIVF = 21
+		.DIVQ(3'b001),		// DIVQ =  1
 		.FILTER_RANGE(3'b010)	// FILTER_RANGE = 2
 	) uut (
 		.LOCK(locked),

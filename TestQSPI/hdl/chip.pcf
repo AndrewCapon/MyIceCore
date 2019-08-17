@@ -12,14 +12,34 @@ set_io io1 74
 set_io dcs 75
 set_io dsck 76
 
+set_io prb00 136
+set_io prb01 137
+set_io prb02 134
+set_io prb03 135
 
-set_io dbg_io0  106
-set_io dbg_io1  105
-set_io dbg_ss   101
-set_io dbg_sclk 99
+set_io prb04 141
+set_io prb05 142
+set_io prb06 138
+set_io prb07 139
 
-set_io dbg_1  19
-set_io dbg_2  20
-set_io dbg_3  23
-set_io dbg_4  24
+set_io prb08 1
+set_io prb09 2
+set_io prb10 7
+set_io prb11 8
 
+set_io prb12 143
+set_io prb13 144
+set_io prb14 3
+set_io prb15 4
+
+#set_io dbg_io0  106
+#set_io dbg_io1  105
+#set_io dbg_ss   101
+#set_io dbg_sclk 99
+
+#set_io dbg_1  19
+#set_io dbg_2  20
+#set_io dbg_3  23
+#set_io dbg_4  24
+
+#set_io p16 26
