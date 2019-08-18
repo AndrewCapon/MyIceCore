@@ -259,7 +259,7 @@ loop(void)
   QSPI_CommandTypeDef     sCommand;
   QSPI_AutoPollingTypeDef sConfig;
 
-#define COUNT 4
+#define COUNT 16
   /* Enable write operations ------------------------------------------ */
   sCommand.InstructionMode   = QSPI_INSTRUCTION_1_LINE;
   sCommand.Instruction       = 0x01;
@@ -279,10 +279,12 @@ loop(void)
   sCommand.AddressMode       = QSPI_ADDRESS_NONE;
 
   // Send Data
-  //uint8_t txData[16] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+  uint8_t txData[16] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+  uint8_t *checkData = txData;
+
   //uint8_t txData[16] = {0x81, 0xaa, 0x55, 0x81};
-  uint8_t txData[16] = {0};
-  uint8_t checkData[16] = {2,2,2,2};
+  //uint8_t txData[16] = {0};
+  //uint8_t checkData[16] = {2,2,2,2};
 
   if (HAL_QSPI_Command(&hqspi, &sCommand, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
   {
@@ -311,17 +313,17 @@ loop(void)
   }
 
 
-//  // Compare Data
-//  bool bDiff = false;
-//  for(int i =0; i < COUNT; i++)
-//  	if(checkData[i] != rxData[i])
-//  		bDiff = true;
-//
-//  if(bDiff)
-//		cdc_puts((char *)"*");
-//  else
-//		cdc_puts((char *)".");
-//
+  // Compare Data
+  bool bDiff = false;
+  for(int i =0; i < COUNT; i++)
+  	if(checkData[i] != rxData[i])
+  		bDiff = true;
+
+  if(bDiff)
+		cdc_puts((char *)"*");
+  else
+		cdc_puts((char *)".");
+
 
 
   uCount++;

@@ -84,12 +84,15 @@ module chip (
   //   .out_clk(clk5)
   // );
 
-  // pll275 clock_275 (
-  //   .clock_in(clk),
-  //   .clock_out(clk275),
-  //   .locked(locked)
-  // );
-
+//`define FASTCLOCK
+`ifdef FASTCLOCK
+  pll275 clock_275 (
+    .clock_in(clk),
+    .clock_out(clk275),
+    .locked(locked)
+  );
+  wire useClk = clk275;
+`else
   pll200 clock_200 (
     .clock_in(clk),
     .clock_out(clk200),
@@ -105,7 +108,7 @@ module chip (
     .clk(clk100),
     .out_clk(clk50)
   );
-
+ 
   frequency_divider_by2 clock_25(
     .clk(clk50),
     .out_clk(clk25)
@@ -126,8 +129,9 @@ module chip (
     .out_clk(clk3_125)
   );
    
-  wire useClk = clk200;
-
+  wire useClk = clk50;
+`endif
+ 
 //`define VERILOG
 
 `ifdef VERILOG
@@ -230,7 +234,7 @@ assign prb13 = 0;
 assign prb14 = 0;
 assign prb15 = 0;
 
-
+ 
 
 MyTopLevel top_level (
   .io_leds(led),

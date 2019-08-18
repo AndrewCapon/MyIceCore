@@ -51,7 +51,7 @@ case class QspiSlave(generics : QspiSlaveCtrlGenerics, useSclk : Boolean = true)
     ret
   }
 }
-
+ 
 case class QspiSlaveCtrl3() extends Component{
   val io = new Bundle {
     val sclk = in Bool
@@ -94,6 +94,7 @@ case class QspiSlaveCtrl3() extends Component{
     io.rxPayload := buffer
 
   }
+  
 
 val qspiTxClockDomainConfig = ClockDomainConfig(clockEdge = FALLING)
 val qspiTxCoreClockDomain = ClockDomain(io.sclk, io.ss, config = qspiTxClockDomainConfig)
@@ -129,7 +130,6 @@ val syncedTxReadyFlag = BufferCC(qspiTxArea.readyFlag)
 // asignments
 io.rxReady := syncedRxReadyFlag
 io.txReady := syncedTxReadyFlag
-
 
 
 }

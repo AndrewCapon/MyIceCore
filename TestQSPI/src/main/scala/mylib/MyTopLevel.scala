@@ -179,103 +179,130 @@ class MyTopLevel extends Component{
 
 
   //val rxValidEdges = qspiSlaveCtrl.io.rx.valid.edges()
-  val rxReadyEdges = qspiSlaveCtrl.io.rxReady.edges()
-  val txReadyEdges = qspiSlaveCtrl.io.txReady.edges()
+  // val rxReadyEdges = qspiSlaveCtrl.io.rxReady.edges()
+  // val txReadyEdges = qspiSlaveCtrl.io.txReady.edges()
   
-  io.dbg_1 := qspiSlaveCtrl.io.rxReady
-  io.dbg_2 := qspiSlaveCtrl.io.txReady
-  io.dbg_3 := rxReadyEdges.rise
-  io.dbg_4 := txReadyEdges.rise 
+  val rxReadyChange = Reg(Bool) init False
+  val txReadyChange = Reg(Bool) init False
 
- 
+
+  // io.dbg_1 := qspiSlaveCtrl.io.rxReady
+  // io.dbg_2 := rxReadyChange
+  // io.dbg_3 := qspiSlaveCtrl.io.txReady
+  // io.dbg_4 := txReadyChange
+  io.dbg_1 := False
+  io.dbg_2 := False
+  io.dbg_3 := False
+  io.dbg_4 := False
 
   val sendByte = Reg(Bits(8 bits)).addTag(crossClockDomain)
   qspiSlaveCtrl.io.txPayload := sendByte;
 
   when(qspiSlaveCtrl.io.rxReady.rise()){
-    when(qspiSlaveCtrl.io.rxPayload === 0x01){
-      sendByte := 0x01
-    } otherwise when (qspiSlaveCtrl.io.rxPayload === 0x02){
-      sendByte := 0x02
-    }
+    rxReadyChange := ~rxReadyChange
+    // when(qspiSlaveCtrl.io.rxPayload === 0x01){
+    //   sendByte := 0x01
+    // } otherwise when (qspiSlaveCtrl.io.rxPayload === 0x02){
+    //   sendByte := 0x02
+    // }
   }
-  //   always @(posedge useClk)
-//   begin
-//     //spi_txdata <= 'h55;
-//     if(spi_rxready) begin
-//       rxReadyChange <= !rxReadyChange;
-//       if(spi_rxdata == 'h01) begin
-//         spi_txdata <='h01;
-//         rdbg <= 1;
-//       end else if (spi_rxdata == 'h02) begin
-//         spi_txdata <='h02;
-//         rdbg <= 0;
-//       end
-//     end
-//   end
 
-  // val fsm = new StateMachine{
-  //   val stateWaitSS   = new State with EntryPoint
-  //   val stateDecode   = new State
-  //   val stateReceive  = new State
-  //   val stateSend     = new State
-
-  //   val counter = Counter(256)
+  when(qspiSlaveCtrl.io.txReady.rise()){
+    txReadyChange := ~txReadyChange
+  }  
 
 
-  //   stateWaitSS
-  //     .whenIsActive{
-  //       when(io.ss === False){
-  //         sendByte := 0x88
-  //         goto(stateDecode)
-  //       }
-  //     }
-  //   stateDecode
-  //     .whenIsActive{
-  //       when(rxReadyEdges.rise)
-  //       {
-  //         when(qspiSlaveCtrl.io.rxPayload === 0x01){
-  //           goto(stateReceive)
-  //         } otherwise when(qspiSlaveCtrl.io.rxPayload === 0x02){
-  //           goto(stateSend)
-  //         }
-  //       }      
 
-  //       when(io.ss){
-  //         goto(stateWaitSS)
-  //       }
-  //     }
+  val fsm = new StateMachine{
+    val stateWaitSS   = new State with EntryPoint
+    val stateDecode   = new State
+    val stateReceive  = new State
+    val stateSend     = new State
 
-  //   stateReceive
-  //     .onEntry(counter := 0)
-  //     .whenIsActive{
-  //       when(rxReadyEdges.rise)
-  //       {
-  //         mem(counter) := qspiSlaveCtrl.io.rxPayload;
-  //         counter.increment()
-  //       }      
+    val counter = Counter(256)
+    val skipByte = Reg(Bool) init(True)
 
-  //       when(io.ss){
-  //         goto(stateWaitSS)
-  //       }
-  //     }
+    stateWaitSS
+      .whenIsActive{
+        io.dbg_1 := True
+        sendByte := 0xfc
+        when(io.ss === False){
+          sendByte := 0xff
+          goto(stateDecode)
+        }
+      }
+    stateDecode
+      .whenIsActive{
+        io.dbg_2 := True
+        sendByte := 0xfe
+        when(qspiSlaveCtrl.io.rxReady.rise())
+        {
+          when(qspiSlaveCtrl.io.rxPayload === 0x01){
+            goto(stateReceive)
+          } otherwise when(qspiSlaveCtrl.io.rxPayload === 0x02){
+            goto(stateSend)
+          }
+        }      
 
-  //   stateSend
-  //     .onEntry(counter := 0)
-  //     .whenIsActive{
-  //       when(txReadyEdges.rise || counter === 0)
-  //       {
-  //         sendByte := mem(counter)
-  //         counter.increment()
-  //       }      
+        // when(io.ss){
+        //   goto(stateWaitSS)
+        // }
+      }
 
-  //       when(io.ss){
-  //         goto(stateWaitSS)
-  //       }
-  //     }
-  // }
+    stateReceive
+      .onEntry(counter := 0)
+      .onEntry(skipByte := True)
+      .whenIsActive{
+        sendByte := 0xfd
+        when(qspiSlaveCtrl.io.rxReady.rise())
+        {
+          when(skipByte){
+            skipByte := False
+          } otherwise{
+            io.dbg_3 := True
+            mem(counter) := qspiSlaveCtrl.io.rxPayload;
+            counter.increment()
+          }
+        }      
 
+        when(io.ss){
+          goto(stateDecode)
+        }
+      }
+
+    stateSend
+      .onEntry(counter := 0)
+      .onEntry(skipByte := True)
+      .whenIsActive{
+        when(qspiSlaveCtrl.io.txReady.rise())
+        {
+          when(skipByte){
+            skipByte := False
+            sendByte := mem(counter)
+          } otherwise{
+            io.dbg_4 := True
+            sendByte := mem(counter)
+            counter.increment()
+          }
+        }      
+
+        when(io.ss){
+          goto(stateDecode)
+        }
+      }
+  }
 }
+
+
+
+
+
+
+
+
+
+
+
 
 // class MyTopLevel extends Component{
 //   val io = new Bundle 
@@ -303,7 +330,7 @@ class MyTopLevel extends Component{
 //   }
   
 //   val ledGlow = new LedGlow(24);
-//   val qspiSlaveCtrl = new QspiSlaveCtrl2(QspiSlaveCtrlGenerics(8))
+//   val qspiSlaveCtrl = new QspiSlaveCtrl(QspiSlaveCtrlGenerics(8))
 
 //   val mem = Mem(Bits(8 bits),wordCount = 256)
 
@@ -317,10 +344,10 @@ class MyTopLevel extends Component{
 //   io.io1                      := qspiSlaveCtrl.io.spi.io1.write;
   
 
-//   io.leds(0) := !io.io0;            // blue
-//   io.leds(1) := !io.io1;   // green
-//   io.leds(2) := !io.ss;  // yellow
-//   io.leds(3) := !io.sclk;  // red
+//   io.leds(0) := True;            // blue
+//   io.leds(1) := False;   // green
+//   io.leds(2) := True;  // yellow
+//   io.leds(3) := True;  // red
 
 //   io.dbg_io0  := io.io0
 //   io.dbg_io1  := io.io1
@@ -368,15 +395,23 @@ class MyTopLevel extends Component{
 //         when(rxValidEdges.rise)
 //         {
 //           when(qspiSlaveCtrl.io.rx.payload === 0x01){
+//             sendByte := 0x01
 //             goto(stateReceive)
-//           } otherwise when(qspiSlaveCtrl.io.rx.payload === 0x02){
-//             goto(stateSend)
+//           } otherwise{
+//               when(qspiSlaveCtrl.io.rx.payload === 0x02){
+//                 sendByte := 0x02
+//                 goto(stateSend)
+//               } otherwise {
+//                 sendByte := 0x03
+//               }
 //           }
-//         }      
+//         } otherwise {
+//           sendByte := 0x04
+//         }     
 
-//         when(io.ss){
-//           goto(stateWaitSS)
-//         }
+//         // when(io.ss){
+//         //   goto(stateWaitSS)
+//         // }
 //       }
 
 //     stateReceive
@@ -389,7 +424,7 @@ class MyTopLevel extends Component{
 //         }      
 
 //         when(io.ss){
-//           goto(stateWaitSS)
+//           goto(stateDecode)
 //         }
 //       }
 
@@ -403,7 +438,7 @@ class MyTopLevel extends Component{
 //         }      
 
 //         when(io.ss){
-//           goto(stateWaitSS)
+//           goto(stateDecode)
 //         }
 //       }
 //   }
