@@ -102,13 +102,13 @@ module chip (
   frequency_divider_by2 clock_100(
     .clk(clk200),
     .out_clk(clk100)
-  );
+  ); 
 
   frequency_divider_by2 clock_50(
     .clk(clk100),
     .out_clk(clk50)
   );
- 
+  
   frequency_divider_by2 clock_25(
     .clk(clk50),
     .out_clk(clk25)
@@ -118,7 +118,7 @@ module chip (
     .clk(clk25),
     .out_clk(clk12_5)
   );
-
+ 
   frequency_divider_by2 clock_6_25(
     .clk(clk12_5),
     .out_clk(clk6_25)
@@ -129,7 +129,7 @@ module chip (
     .out_clk(clk3_125)
   );
    
-  wire useClk = clk50;
+  wire useClk = clk25;
 `endif
  
 //`define VERILOG
@@ -166,7 +166,7 @@ module chip (
   reg [7:0] spi_txdata;
   wire spi_txready;
 
-
+ 
   // assign dbg_1 = spi_rxready;
   // assign dbg_2 = spi_rxready;
   // assign dbg_3 = 0;

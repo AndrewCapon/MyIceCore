@@ -211,86 +211,149 @@ class MyTopLevel extends Component{
     txReadyChange := ~txReadyChange
   }  
 
-
-
-  val fsm = new StateMachine{
-    val stateWaitSS   = new State with EntryPoint
-    val stateDecode   = new State
-    val stateReceive  = new State
-    val stateSend     = new State
-
-    val counter = Counter(256)
-    val skipByte = Reg(Bool) init(True)
-
-    stateWaitSS
-      .whenIsActive{
-        io.dbg_1 := True
-        sendByte := 0xfc
-        when(io.ss === False){
-          sendByte := 0xff
-          goto(stateDecode)
-        }
-      }
-    stateDecode
-      .whenIsActive{
-        io.dbg_2 := True
-        sendByte := 0xfe
-        when(qspiSlaveCtrl.io.rxReady.rise())
-        {
-          when(qspiSlaveCtrl.io.rxPayload === 0x01){
-            goto(stateReceive)
-          } otherwise when(qspiSlaveCtrl.io.rxPayload === 0x02){
-            goto(stateSend)
-          }
-        }      
-
-        // when(io.ss){
-        //   goto(stateWaitSS)
-        // }
-      }
-
-    stateReceive
-      .onEntry(counter := 0)
-      .onEntry(skipByte := True)
-      .whenIsActive{
-        sendByte := 0xfd
-        when(qspiSlaveCtrl.io.rxReady.rise())
-        {
-          when(skipByte){
-            skipByte := False
-          } otherwise{
-            io.dbg_3 := True
-            mem(counter) := qspiSlaveCtrl.io.rxPayload;
-            counter.increment()
-          }
-        }      
-
-        when(io.ss){
-          goto(stateDecode)
-        }
-      }
-
-    stateSend
-      .onEntry(counter := 0)
-      .onEntry(skipByte := True)
-      .whenIsActive{
-        when(qspiSlaveCtrl.io.txReady.rise())
-        {
-          when(skipByte){
-            skipByte := False
-            sendByte := mem(counter)
-          } otherwise{
-            io.dbg_4 := True
-            sendByte := mem(counter)
-            counter.increment()
-          }
-        }      
-
-        when(io.ss){
-          goto(stateDecode)
-        }
-      }
+  // alternative to StateMachine()
+  object FSMState extends SpinalEnum {
+    val sDecode, sReceive, sSend = newElement()
   }
+
+  val stateNext = Reg(FSMState())
+  stateNext := FSMState.sDecode
+
+  val counter = Counter(256)
+  val skipByte = Reg(Bool) init(True)
+
+  switch(stateNext){
+    is(FSMState.sDecode){
+      when(qspiSlaveCtrl.io.rxReady.rise())
+      {
+        counter := 0
+        skipByte := True
+  
+        when(qspiSlaveCtrl.io.rxPayload === 0x01){
+          stateNext := FSMState.sReceive
+        } otherwise when(qspiSlaveCtrl.io.rxPayload === 0x02){
+          stateNext := FSMState.sSend
+        }
+      }      
+    }
+
+    is(FSMState.sReceive){
+      stateNext := FSMState.sReceive
+      when(qspiSlaveCtrl.io.rxReady.rise())
+      {
+        when(skipByte){
+          skipByte := False
+        } otherwise{
+          io.dbg_3 := True
+          mem(counter) := qspiSlaveCtrl.io.rxPayload;
+          counter.increment()
+        }
+      }      
+
+      when(io.ss){
+        stateNext := FSMState.sDecode
+      }
+    }
+
+    is(FSMState.sSend){
+      stateNext := FSMState.sSend
+      when(qspiSlaveCtrl.io.txReady.rise())
+      {
+        when(skipByte){
+          skipByte := False
+          sendByte := mem(counter)
+        } otherwise{
+          io.dbg_4 := True
+          sendByte := mem(counter)
+          counter.increment()
+        }
+      }      
+
+      when(io.ss){
+        stateNext := FSMState.sDecode
+      }
+    }
+  }
+
+
+  // val fsm = new StateMachine{
+  //   val stateWaitSS   = new State with EntryPoint
+  //   val stateDecode   = new State
+  //   val stateReceive  = new State
+  //   val stateSend     = new State
+
+  //   val counter = Counter(256)
+  //   val skipByte = Reg(Bool) init(True)
+
+  //   stateWaitSS
+  //     .whenIsActive{
+  //       io.dbg_1 := True
+  //       sendByte := 0xfc
+  //       when(io.ss === False){
+  //         sendByte := 0xff
+  //         goto(stateDecode)
+  //       }
+  //     }
+  //   stateDecode
+  //     .whenIsActive{
+  //       io.dbg_2 := True
+  //       sendByte := 0xfe
+  //       when(qspiSlaveCtrl.io.rxReady.rise())
+  //       {
+  //         when(qspiSlaveCtrl.io.rxPayload === 0x01){
+  //           goto(stateReceive)
+  //         } otherwise when(qspiSlaveCtrl.io.rxPayload === 0x02){
+  //           goto(stateSend)
+  //         }
+  //       }      
+
+  //       // when(io.ss){
+  //       //   goto(stateWaitSS)
+  //       // }
+  //     }
+
+  //   stateReceive
+  //     .onEntry(counter := 0)
+  //     .onEntry(skipByte := True)
+  //     .whenIsActive{
+  //       sendByte := 0xfd
+  //       when(qspiSlaveCtrl.io.rxReady.rise())
+  //       {
+  //         when(skipByte){
+  //           skipByte := False
+  //         } otherwise{
+  //           io.dbg_3 := True
+  //           mem(counter) := qspiSlaveCtrl.io.rxPayload;
+  //           counter.increment()
+  //         }
+  //       }      
+
+  //       when(io.ss){
+  //         goto(stateDecode)
+  //       }
+  //     }
+
+  //   stateSend
+  //     .onEntry(counter := 0)
+  //     .onEntry(skipByte := True)
+  //     .whenIsActive{
+  //       when(qspiSlaveCtrl.io.txReady.rise())
+  //       {
+  //         when(skipByte){
+  //           skipByte := False
+  //           sendByte := mem(counter)
+  //         } otherwise{
+  //           io.dbg_4 := True
+  //           sendByte := mem(counter)
+  //           counter.increment()
+  //         }
+  //       }      
+
+  //       when(io.ss){
+  //         goto(stateDecode)
+  //       }
+  //     }
+  // }
 }
 
 
