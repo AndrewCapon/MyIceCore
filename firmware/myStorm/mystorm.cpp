@@ -215,6 +215,64 @@ setup(void)
 
 }
 
+bool sendQSPI(uint8_t *puBuffer, uint8_t uAddr, uint8_t uLen)
+{
+  QSPI_CommandTypeDef     sCommand;
+
+  sCommand.InstructionMode   = QSPI_INSTRUCTION_1_LINE;
+  sCommand.Instruction       = 0x01;
+  sCommand.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
+  sCommand.DataMode          = QSPI_DATA_1_LINE;
+  sCommand.DummyCycles       = 8;
+  sCommand.DdrMode           = QSPI_DDR_MODE_DISABLE;
+  sCommand.DdrHoldHalfCycle  = QSPI_DDR_HHC_ANALOG_DELAY;
+  sCommand.SIOOMode          = QSPI_SIOO_INST_EVERY_CMD;
+
+  sCommand.AddressMode       = QSPI_ADDRESS_1_LINE;
+  sCommand.AddressSize			 = QSPI_ADDRESS_8_BITS;
+
+  sCommand.Address					 = uAddr;
+  sCommand.NbData       		 = uLen;
+
+
+  if (HAL_QSPI_Command(&hqspi, &sCommand, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+  	return false;
+
+  if(HAL_QSPI_Transmit(&hqspi, puBuffer, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+  	return false;
+
+  return true;
+}
+
+bool receiveQSPI(uint8_t *puBuffer, uint8_t uAddr, uint8_t uLen)
+{
+  QSPI_CommandTypeDef     sCommand;
+
+  sCommand.InstructionMode   = QSPI_INSTRUCTION_1_LINE;
+  sCommand.Instruction       = 0x02;
+  sCommand.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
+  sCommand.DataMode          = QSPI_DATA_1_LINE;
+  sCommand.DummyCycles       = 8;
+  sCommand.DdrMode           = QSPI_DDR_MODE_DISABLE;
+  sCommand.DdrHoldHalfCycle  = QSPI_DDR_HHC_ANALOG_DELAY;
+  sCommand.SIOOMode          = QSPI_SIOO_INST_EVERY_CMD;
+
+  sCommand.AddressMode       = QSPI_ADDRESS_1_LINE;
+  sCommand.AddressSize			 = QSPI_ADDRESS_8_BITS;
+
+  sCommand.Address					 = uAddr;
+  sCommand.NbData       		 = uLen;
+
+
+  if (HAL_QSPI_Command(&hqspi, &sCommand, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+  	return false;
+
+  if(HAL_QSPI_Receive(&hqspi, puBuffer, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+  	return false;
+
+  return true;
+}
+
 
 /*
  * Loop function (called repeatedly)
@@ -256,73 +314,143 @@ loop(void)
 
 	//HAL_QSPI_Transmit(hqspi, buffer,1000);
 
-  QSPI_CommandTypeDef     sCommand;
-  QSPI_AutoPollingTypeDef sConfig;
-
-#define COUNT 16
-  /* Enable write operations ------------------------------------------ */
-  sCommand.InstructionMode   = QSPI_INSTRUCTION_1_LINE;
-  sCommand.Instruction       = 0x01;
-  sCommand.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
-  sCommand.DataMode          = QSPI_DATA_1_LINE;
-  sCommand.DummyCycles       = 8;
-  sCommand.DdrMode           = QSPI_DDR_MODE_DISABLE;
-  sCommand.DdrHoldHalfCycle  = QSPI_DDR_HHC_ANALOG_DELAY;
-  sCommand.SIOOMode          = QSPI_SIOO_INST_EVERY_CMD;
-  sCommand.NbData       		 = COUNT;
-
-//  sCommand.AddressMode       = QSPI_ADDRESS_1_LINE;
-//  sCommand.Address					 = 0x01020304;
-//  sCommand.AddressSize			 = QSPI_ADDRESS_24_BITS;
-
-
-  sCommand.AddressMode       = QSPI_ADDRESS_NONE;
-
   // Send Data
-  uint8_t txData[16] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
-  uint8_t *checkData = txData;
+  uint8_t txData1[16] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+  uint8_t rxData1[16]	= {0};
 
-  //uint8_t txData[16] = {0x81, 0xaa, 0x55, 0x81};
-  //uint8_t txData[16] = {0};
-  //uint8_t checkData[16] = {2,2,2,2};
+  uint8_t txData2[16] = {20,21,22,23,24,25,26,27,28,29,30,31,32,32,34,35};
+  uint8_t rxData2[16]	= {0};
 
-  if (HAL_QSPI_Command(&hqspi, &sCommand, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
-  {
+  if(!sendQSPI(txData1, 0x00, 16))
     Error_Handler();
-  }
 
-
-  if(HAL_QSPI_Transmit(&hqspi, txData, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
-  {
-  	//Error_Handler();
-  }
-
-  // Receive Data
-  sCommand.Instruction       = 0x02;
-
-  if (HAL_QSPI_Command(&hqspi, &sCommand, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
-  {
+  if(!sendQSPI(txData2, 0x20, 16))
     Error_Handler();
-  }
 
 
-  uint8_t rxData[COUNT] = {0};
-  if(HAL_QSPI_Receive(&hqspi, rxData, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
-  {
+  if(!receiveQSPI(rxData1, 0x00, 16))
     Error_Handler();
+
+
+  if(!receiveQSPI(rxData2, 0x20, 16))
+    Error_Handler();
+
+  bool bDiff1 = false;
+  bool bDiff2 = false;
+  for(int i =0; i < 16; i++)
+  {
+  	if(txData1[i] != rxData1[i])
+  		bDiff1 = true;
+
+  	if(txData2[i] != rxData2[i])
+  		bDiff2 = true;
   }
 
-
-  // Compare Data
-  bool bDiff = false;
-  for(int i =0; i < COUNT; i++)
-  	if(checkData[i] != rxData[i])
-  		bDiff = true;
-
-  if(bDiff)
+  if(bDiff1 || bDiff2)
 		cdc_puts((char *)"*");
   else
 		cdc_puts((char *)".");
+
+
+//  QSPI_CommandTypeDef     sCommand;
+//  QSPI_AutoPollingTypeDef sConfig;
+//
+//#define COUNT 16
+//  /* Enable write operations ------------------------------------------ */
+//  sCommand.InstructionMode   = QSPI_INSTRUCTION_1_LINE;
+//  sCommand.Instruction       = 0x01;
+//  sCommand.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
+//  sCommand.DataMode          = QSPI_DATA_1_LINE;
+//  sCommand.DummyCycles       = 8;
+//  sCommand.DdrMode           = QSPI_DDR_MODE_DISABLE;
+//  sCommand.DdrHoldHalfCycle  = QSPI_DDR_HHC_ANALOG_DELAY;
+//  sCommand.SIOOMode          = QSPI_SIOO_INST_EVERY_CMD;
+//  sCommand.NbData       		 = COUNT;
+//
+//  sCommand.AddressMode       = QSPI_ADDRESS_1_LINE;
+//  sCommand.Address					 = 0;
+//  sCommand.AddressSize			 = QSPI_ADDRESS_8_BITS;
+//
+//
+//
+
+//  // txdata 1 send to addr 0x00
+//  sCommand.Address					 = 0x00;
+//  if (HAL_QSPI_Command(&hqspi, &sCommand, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
+//
+//
+//  if(HAL_QSPI_Transmit(&hqspi, txData1, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+//  {
+//  	Error_Handler();
+//  }
+//
+//  // txdata 2 send to addr 0x20
+//  sCommand.Address					 = 0x20;
+//  if (HAL_QSPI_Command(&hqspi, &sCommand, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
+//
+//
+//  if(HAL_QSPI_Transmit(&hqspi, txData2, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+//  {
+//  	Error_Handler();
+//  }
+//
+//
+//
+//  // Receive Data from addr 0x00
+//  sCommand.Instruction       = 0x02;
+//  sCommand.Address					 = 0x00;
+//
+//  if (HAL_QSPI_Command(&hqspi, &sCommand, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
+//
+//
+//  uint8_t rxData2[COUNT] = {0};
+//  if(HAL_QSPI_Receive(&hqspi, rxData2, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
+//
+//
+//  // Receive Data from addr 0x20
+//  sCommand.Instruction       = 0x02;
+//  sCommand.Address					 = 0x20;
+//
+//  if (HAL_QSPI_Command(&hqspi, &sCommand, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
+//
+//
+//  uint8_t rxData2[COUNT] = {0};
+//  if(HAL_QSPI_Receive(&hqspi, rxData2, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
+//
+//
+//
+//  // Compare Data
+//  bool bDiff = false;
+//  for(int i =0; i < COUNT; i++)
+//  	if(checkData[i] != rxData[i])
+//  		bDiff = true;
+//
+//  if(bDiff)
+//		cdc_puts((char *)"*");
+//  else
+//		cdc_puts((char *)".");
+//
+
+
+
 
 
 

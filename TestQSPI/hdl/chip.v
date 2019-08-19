@@ -118,7 +118,7 @@ module chip (
     .clk(clk25),
     .out_clk(clk12_5)
   );
- 
+  
   frequency_divider_by2 clock_6_25(
     .clk(clk12_5),
     .out_clk(clk6_25)
@@ -129,7 +129,7 @@ module chip (
     .out_clk(clk3_125)
   );
    
-  wire useClk = clk25;
+  wire useClk = clk100;
 `endif
  
 //`define VERILOG
@@ -202,7 +202,7 @@ module chip (
       end
     end
   end
-
+ 
   qspislave_rx QR (
     .clk(useClk),
     .rxdata(spi_rxdata),

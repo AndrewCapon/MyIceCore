@@ -21,7 +21,7 @@ chip.bin: hdl/* MyTopLevel.v
 #	arachne-pnr -m 100 -r -d 8k -P tq144:4k -p hdl/chip.pcf chip.blif -o chip.txt
 #	icepack chip.txt chip.bin
 	yosys -q -p "synth_ice40 -top chip -json chip.json" hdl/*.v MyTopLevel.v
-	nextpnr-ice40 --package tq144:4k --hx8k --json chip.json --pcf hdl/chip.pcf --asc chip.asc --freq 25
+	nextpnr-ice40 --package tq144:4k --hx8k --json chip.json --pcf hdl/chip.pcf --asc chip.asc --freq 100
 	icepack chip.asc chip.bin                                      
 
 
@@ -31,7 +31,11 @@ MyTopLevel.v: src/main/scala/mylib/*.scala
 .PHONY: upload
 upload:
 	stty -f $(TTY) raw
-	cat chip.bin flash.bin chip.bin reset.bin > $(TTY)
+	cat chip.bin > $(TTY)
+	sleep 1
+	cat flash.bin chip.bin > $(TTY)
+	sleep 1
+	cat reset.bin > $(TTY)
 
 .PHONY: clean
 clean:
