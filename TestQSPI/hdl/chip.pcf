@@ -7,8 +7,11 @@ set_io led[3] 56 # B94 cs Red led
  
 
 # QSpi
-set_io io0 73
-set_io io1 74
+set_io qd[0] 73
+set_io qd[1] 74
+
+#set_io io0 73
+#set_io io1 74
 set_io dcs 75
 set_io dsck 76
 
@@ -31,6 +34,8 @@ set_io prb12 143
 set_io prb13 144
 set_io prb14 3
 set_io prb15 4
+
+
 
 #set_io dbg_io0  106
 #set_io dbg_io1  105

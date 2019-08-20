@@ -215,7 +215,8 @@ setup(void)
 
 }
 
-bool sendQSPI(uint8_t *puBuffer, uint8_t uAddr, uint8_t uLen)
+
+bool sendSingleQSPI(uint8_t *puBuffer, uint8_t uAddr, uint8_t uLen)
 {
   QSPI_CommandTypeDef     sCommand;
 
@@ -244,7 +245,7 @@ bool sendQSPI(uint8_t *puBuffer, uint8_t uAddr, uint8_t uLen)
   return true;
 }
 
-bool receiveQSPI(uint8_t *puBuffer, uint8_t uAddr, uint8_t uLen)
+bool receiveSingleQSPI(uint8_t *puBuffer, uint8_t uAddr, uint8_t uLen)
 {
   QSPI_CommandTypeDef     sCommand;
 
@@ -258,6 +259,65 @@ bool receiveQSPI(uint8_t *puBuffer, uint8_t uAddr, uint8_t uLen)
   sCommand.SIOOMode          = QSPI_SIOO_INST_EVERY_CMD;
 
   sCommand.AddressMode       = QSPI_ADDRESS_1_LINE;
+  sCommand.AddressSize			 = QSPI_ADDRESS_8_BITS;
+
+  sCommand.Address					 = uAddr;
+  sCommand.NbData       		 = uLen;
+
+
+  if (HAL_QSPI_Command(&hqspi, &sCommand, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+  	return false;
+
+  if(HAL_QSPI_Receive(&hqspi, puBuffer, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+  	return false;
+
+  return true;
+}
+
+
+bool sendDoubleQSPI(uint8_t *puBuffer, uint8_t uAddr, uint8_t uLen)
+{
+  QSPI_CommandTypeDef     sCommand;
+
+  sCommand.InstructionMode   = QSPI_INSTRUCTION_2_LINES;
+  sCommand.Instruction       = 0x01;
+  sCommand.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
+  sCommand.DataMode          = QSPI_DATA_2_LINES;
+  sCommand.DummyCycles       = 0;
+  sCommand.DdrMode           = QSPI_DDR_MODE_DISABLE;
+  sCommand.DdrHoldHalfCycle  = QSPI_DDR_HHC_ANALOG_DELAY;
+  sCommand.SIOOMode          = QSPI_SIOO_INST_EVERY_CMD;
+
+  sCommand.AddressMode       = QSPI_ADDRESS_2_LINES;
+  sCommand.AddressSize			 = QSPI_ADDRESS_8_BITS;
+
+  sCommand.Address					 = uAddr;
+  sCommand.NbData       		 = uLen;
+
+
+  if (HAL_QSPI_Command(&hqspi, &sCommand, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+  	return false;
+
+  if(HAL_QSPI_Transmit(&hqspi, puBuffer, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+  	return false;
+
+  return true;
+}
+
+bool receiveDoubleQSPI(uint8_t *puBuffer, uint8_t uAddr, uint8_t uLen)
+{
+  QSPI_CommandTypeDef     sCommand;
+
+  sCommand.InstructionMode   = QSPI_INSTRUCTION_2_LINES;
+  sCommand.Instruction       = 0x02;
+  sCommand.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
+  sCommand.DataMode          = QSPI_DATA_2_LINES;
+  sCommand.DummyCycles       = 4;
+  sCommand.DdrMode           = QSPI_DDR_MODE_DISABLE;
+  sCommand.DdrHoldHalfCycle  = QSPI_DDR_HHC_ANALOG_DELAY;
+  sCommand.SIOOMode          = QSPI_SIOO_INST_EVERY_CMD;
+
+  sCommand.AddressMode       = QSPI_ADDRESS_2_LINES;
   sCommand.AddressSize			 = QSPI_ADDRESS_8_BITS;
 
   sCommand.Address					 = uAddr;
@@ -320,24 +380,35 @@ loop(void)
 
   uint8_t txData2[16] = {20,21,22,23,24,25,26,27,28,29,30,31,32,32,34,35};
   uint8_t rxData2[16]	= {0};
+#define COUNT 16
+#define TEST_DOUBLE
 
-  if(!sendQSPI(txData1, 0x00, 16))
+#ifdef TEST_DOUBLE
+  if(!sendDoubleQSPI(txData1, 0x00, COUNT))
     Error_Handler();
 
-  if(!sendQSPI(txData2, 0x20, 16))
+  if(!receiveDoubleQSPI(rxData1, 0x00, COUNT))
+    Error_Handler();
+
+#else
+
+  if(!sendSingleQSPI(txData1, 0x00, COUNT))
+    Error_Handler();
+
+  if(!sendSingleQSPI(txData2, 0x20, COUNT))
     Error_Handler();
 
 
-  if(!receiveQSPI(rxData1, 0x00, 16))
+  if(!receiveSingleQSPI(rxData1, 0x00, COUNT))
     Error_Handler();
 
 
-  if(!receiveQSPI(rxData2, 0x20, 16))
+  if(!receiveSingleQSPI(rxData2, 0x20, COUNT))
     Error_Handler();
 
   bool bDiff1 = false;
   bool bDiff2 = false;
-  for(int i =0; i < 16; i++)
+  for(int i =0; i < COUNT; i++)
   {
   	if(txData1[i] != rxData1[i])
   		bDiff1 = true;
@@ -350,7 +421,9 @@ loop(void)
 		cdc_puts((char *)"*");
   else
 		cdc_puts((char *)".");
+#endif
 
+  uCount++;
 
 //  QSPI_CommandTypeDef     sCommand;
 //  QSPI_AutoPollingTypeDef sConfig;
@@ -454,7 +527,7 @@ loop(void)
 
 
 
-  uCount++;
+
 #ifdef CADFirmware
 	if(gpio_ishigh(MODE_BOOT))
 	{
