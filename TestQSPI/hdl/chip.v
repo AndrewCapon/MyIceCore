@@ -23,305 +23,36 @@ end
 endmodule
 
 module chip (
-    // 25Hz clock input
-    input  clk,
+  // 25Hz clock input
+  input  clk,
 
-    // qspi
-    // inout  io0,
-    // inout  io1,
-    inout  [1:0] qd,
-    input  dcs,
-    input  dsck,
+  inout  [1:0] qd,
+  input  dcs,
+  input  dsck,
 
-    // led outputs
-    output [3:0] led,
+  // led outputs
+  output [3:0] led,
+);
 
-    // gpio
-    output prb00,
-    output prb01,
-    output prb02,
-    output prb03,
-    output prb04,
-    output prb05,
-    output prb06,
-    output prb07,
-    output prb08,
-    output prb09,
-    output prb10,
-    output prb11,
-    output prb12,
-    output prb13,
-    output prb14,
-    output prb15,
-  );
+wire clk200;
+wire clk100;
+wire locked;
 
-  wire clk275;
-  wire clk200;
-  wire clk100;
-  wire clk50;
-  wire clk25;
-  wire clk10;
-  wire clk12_5;
-  wire clk6_25;
-  wire clk3_125;
-  wire real_clk_12.5;
-  wire real_clk_6_25;
+
+pll200 clock_200 (
+  .clock_in(clk),
+  .clock_out(clk200),
+  .locked(locked)
+);
+
+frequency_divider_by2 clock_100(
+  .clk(clk200),
+  .out_clk(clk100)
+); 
   
-  wire locked;
+wire useClk = clk100;
 
-  // pll20 clock_20 (
-  //   .clock_in(clk),
-  //   .clock_out(clk200),
-  //   .locked(locked)
-  // );
-
-  // frequency_divider_by2 clock_10(
-  //   .clk(clk20),
-  //   .out_clk(clk10)
-  // );
-
-  // frequency_divider_by2 clock_5(
-  //   .clk(clk10),
-  //   .out_clk(clk5)
-  // );
-
-//`define FASTCLOCK
-`ifdef FASTCLOCK
-  pll275 clock_275 (
-    .clock_in(clk),
-    .clock_out(clk275),
-    .locked(locked)
-  );
-  wire useClk = clk275;
-`else
-  pll200 clock_200 (
-    .clock_in(clk),
-    .clock_out(clk200),
-    .locked(locked)
-  );
-  
-  frequency_divider_by2 clock_100(
-    .clk(clk200),
-    .out_clk(clk100)
-  ); 
-
-  frequency_divider_by2 clock_50(
-    .clk(clk100),
-    .out_clk(clk50)
-  );
-  
-  frequency_divider_by2 clock_25(
-    .clk(clk50),
-    .out_clk(clk25)
-  );
-
-  frequency_divider_by2 clock_12_5(
-    .clk(clk25),
-    .out_clk(clk12_5)
-  );
-  
-  frequency_divider_by2 clock_6_25(
-    .clk(clk12_5),
-    .out_clk(clk6_25)
-  );
-
-  frequency_divider_by2 clock_3_125(
-    .clk(clk6_25),
-    .out_clk(clk3_125)
-  );
-   
-  wire useClk = clk;
-`endif
- 
-//`define VERILOG
-
-`ifdef VERILOG
-  reg rdbg;
-
-  assign prb00 = spi_rxready;
-  assign prb01 = spi_txready;
-  assign prb02 = rxReadyChange;
-  assign prb03 = useClk;
-
-  assign prb04 = io0;
-  assign prb05 = io1;
-  assign prb06 = dcs;
-  assign prb07 = dsck;
-
-  assign prb08 = 0;
-  assign prb09 = 0;
-  assign prb10 = 0;
-  assign prb11 = 0;
-
-  assign prb12 = 0;
-  assign prb13 = 0;
-  assign prb14 = 0;
-  assign prb15 = 0;
-
-  reg [3:0] qdin;
-  reg [3:0] qdout;
-
-  reg [7:0] spi_rxdata;
-  wire spi_rxready;
-
-  reg [7:0] spi_txdata;
-  wire spi_txready;
-
- 
-  // assign dbg_1 = spi_rxready;
-  // assign dbg_2 = spi_rxready;
-  // assign dbg_3 = 0;
-  // assign dbg_4 = 0;
-
-  assign led[0] = 0;
-  assign led[1] = 0;
-  assign led[2] = 0;
-  assign led[3] = 0;
-
-
-  reg [3:0] counter;
-  reg rxReadyChange;
-
-  // always @(posedge useClk)
-  // begin
-  //   qdin <= {io0,io0,io0,io0};
-  // end
-
-  // assign io1 = qdout[0];
- 
-  // always @(posedge useClk)
-  // begin
-  //   //spi_txdata <= 'h55;
-  //   if(spi_rxready) begin
-  //     rxReadyChange <= !rxReadyChange;
-  //     if(spi_rxdata == 'h01) begin
-  //       spi_txdata <='h01;
-  //       rdbg <= 1;
-  //     end else if (spi_rxdata == 'h02) begin
-  //       spi_txdata <='h02;
-  //       rdbg <= 0;
-  //     end
-  //   end
-  // end
- 
-  qspislave_rx QR (
-    .clk(useClk),
-    .rxdata(spi_rxdata),
-    .rxready(spi_rxready),
-    .QCK(dsck),
-    .QSS(dcs),
-    .QD(qdin),
-//    .dbg({prb04, prb05, prb06, prb07})
-  );
-
-//   qspislave_tx QT (
-//     .clk(useClk),
-//     .txdata(spi_txdata),
-//     .txready(spi_txready),
-//     .QCK(dsck),
-//     .QSS(dcs),
-//     .QD(qdout),
-// //    .dbg({prb06, prb07})
-
-//   reg rdbg;
-
-//   assign prb00 = spi_rxready;
-//   assign prb01 = spi_txready;
-//   assign prb02 = rxReadyChange;
-//   assign prb03 = useClk;
-
-//   assign prb04 = io0;
-//   assign prb05 = io1;
-//   assign prb06 = dcs;
-//   assign prb07 = dsck;
-
-//   assign prb08 = 0;
-//   assign prb09 = 0;
-//   assign prb10 = 0;
-//   assign prb11 = 0;
-
-//   assign prb12 = 0;
-//   assign prb13 = 0;
-//   assign prb14 = 0;
-//   assign prb15 = 0;
-
-//   reg [3:0] qdin;
-//   reg [3:0] qdout;
-
-//   reg [7:0] spi_rxdata;
-//   wire spi_rxready;
-
-//   reg [7:0] spi_txdata;
-//   wire spi_txready;
-
- 
-//   // assign dbg_1 = spi_rxready;
-//   // assign dbg_2 = spi_rxready;
-//   // assign dbg_3 = 0;
-//   // assign dbg_4 = 0;
-
-//   assign led[0] = 0;
-//   assign led[1] = 0;
-//   assign led[2] = 0;
-//   assign led[3] = 0;
-
-
-//   reg [3:0] counter;
-//   reg rxReadyChange;
-
-//   always @(posedge useClk)
-//   begin
-//     qdin <= {io0,io0,io0,io0};
-//   end
-
-//   assign io1 = qdout[0];
- 
-//   always @(posedge useClk)
-//   begin
-//     //spi_txdata <= 'h55;
-//     if(spi_rxready) begin
-//       rxReadyChange <= !rxReadyChange;
-//       if(spi_rxdata == 'h01) begin
-//         spi_txdata <='h01;
-//         rdbg <= 1;
-//       end else if (spi_rxdata == 'h02) begin
-//         spi_txdata <='h02;
-//         rdbg <= 0;
-//       end
-//     end
-//   end
- 
-//   qspislave_rx QR (
-//     .clk(useClk),
-//     .rxdata(spi_rxdata),
-//     .rxready(spi_rxready),
-//     .QCK(dsck),
-//     .QSS(dcs),
-//     .QD(qdin),
-// //    .dbg({prb04, prb05, prb06, prb07})
-//   );
-
-//   qspislave_tx QT (
-//     .clk(useClk),
-//     .txdata(spi_txdata),
-//     .txready(spi_txready),
-//     .QCK(dsck),
-//     .QSS(dcs),
-//     .QD(qdout),
-// //    .dbg({prb06, prb07})
-
-//  );
-
-`else
-// assign prb08 = useClk;
-// assign prb09 = useClk;
-// assign prb10 = useClk;
-// assign prb11 = useClk;
-
-// assign prb12 = useClk;
-// assign prb13 = useClk;
-// assign prb14 = useClk;
-// assign prb15 = False;
+assign led = 'he;
 
 wire [1:0] io_qd_read, io_qd_write, io_qd_writeEnable;
 
@@ -336,48 +67,84 @@ SB_IO #(
   );
 
 MyTopLevel top_level (
-  .io_leds(led),
   .io_qd_read(io_qd_read),
   .io_qd_write(io_qd_write),
   .io_qd_writeEnable(io_qd_writeEnable),
   .io_ss(dcs),
   .io_sclk(dsck),
 
-  .io_dbg_1(prb00),
-  .io_dbg_2(prb01),
-  .io_dbg_3(prb02),
-  .io_dbg_4(prb03),
-
-  .io_dbg_io0(prb04),
-  .io_dbg_io1(prb05),
-  .io_dbg_ss(prb06),
-  .io_dbg_sclk(prb07),
-
-  .io_dbgByte({prb08, prb09, prb10, prb11, prb12, prb13, prb14, prb15}),
-
   .clk(useClk),
-  .io_dummy_clk(useClk),
-
   .reset(0),
 );
 
-// working slingle
-// assign prb08 = 0;
-// assign prb09 = 0;
-// assign prb10 = 0;
-// assign prb11 = 0;
+// debug version here down
+// module chip (
+//     // 25Hz clock input
+//     input  clk,
 
-// assign prb12 = 0;
-// assign prb13 = 0;
-// assign prb14 = 0;
-// assign prb15 = 0;
+//     inout  [1:0] qd,
+//     input  dcs,
+//     input  dsck,
 
- 
+//     // led outputs
+//     output [3:0] led,
+
+//     // gpio
+//     output prb00,
+//     output prb01,
+//     output prb02,
+//     output prb03,
+//     output prb04,
+//     output prb05,
+//     output prb06,
+//     output prb07,
+//     output prb08,
+//     output prb09,
+//     output prb10,
+//     output prb11,
+//     output prb12,
+//     output prb13,
+//     output prb14,
+//     output prb15,
+//   );
+
+//   wire clk275;
+//   wire clk200;
+//   wire clk100;
+//   wire locked;
+
+
+//   pll200 clock_200 (
+//     .clock_in(clk),
+//     .clock_out(clk200),
+//     .locked(locked)
+//   );
+  
+//   frequency_divider_by2 clock_100(
+//     .clk(clk200),
+//     .out_clk(clk100)
+//   ); 
+   
+//   wire useClk = clk100;
+// `endif
+
+// wire [1:0] io_qd_read, io_qd_write, io_qd_writeEnable;
+
+// SB_IO #(
+//     .PIN_TYPE(6'b 1010_01),
+//     .PULLUP(1'b0)
+//   ) qd1 [1:0] (
+//     .PACKAGE_PIN(qd),
+//     .OUTPUT_ENABLE(io_qd_writeEnable),
+//     .D_OUT_0(io_qd_write),
+//     .D_IN_0(io_qd_read)
+//   );
 
 // MyTopLevel top_level (
 //   .io_leds(led),
-//   .io_io0(io0),
-//   .io_io1(io1),
+//   .io_qd_read(io_qd_read),
+//   .io_qd_write(io_qd_write),
+//   .io_qd_writeEnable(io_qd_writeEnable),
 //   .io_ss(dcs),
 //   .io_sclk(dsck),
 
@@ -391,11 +158,13 @@ MyTopLevel top_level (
 //   .io_dbg_ss(prb06),
 //   .io_dbg_sclk(prb07),
 
+//   .io_dbgByte({prb08, prb09, prb10, prb11, prb12, prb13, prb14, prb15}),
+
 //   .clk(useClk),
 //   .io_dummy_clk(useClk),
 
 //   .reset(0),
 // );
-`endif
+
 
 endmodule

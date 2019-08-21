@@ -275,7 +275,7 @@ bool receiveSingleQSPI(uint8_t *puBuffer, uint8_t uAddr, uint8_t uLen)
 }
 
 
-bool sendDoubleQSPI(uint8_t *puBuffer, uint8_t uAddr, uint8_t uLen)
+bool sendDoubleQSPI(uint8_t *puBuffer, uint8_t uAddr, uint16_t uLen)
 {
   QSPI_CommandTypeDef     sCommand;
 
@@ -304,7 +304,7 @@ bool sendDoubleQSPI(uint8_t *puBuffer, uint8_t uAddr, uint8_t uLen)
   return true;
 }
 
-bool receiveDoubleQSPI(uint8_t *puBuffer, uint8_t uAddr, uint8_t uLen)
+bool receiveDoubleQSPI(uint8_t *puBuffer, uint8_t uAddr, uint16_t uLen)
 {
   QSPI_CommandTypeDef     sCommand;
 
@@ -380,15 +380,27 @@ loop(void)
 
   uint8_t txData2[16] = {20,21,22,23,24,25,26,27,28,29,30,31,32,32,34,35};
   uint8_t rxData2[16]	= {0};
-#define COUNT 16
+#define COUNT 8
 #define TEST_DOUBLE
 
 #ifdef TEST_DOUBLE
-  if(!sendDoubleQSPI(txData1, 0x00, COUNT))
+
+//  uint8_t txLargeBuffer[256];
+//  if(!sendDoubleQSPI(txLargeBuffer, 0x00, 256))
+//  	Error_Handler();
+
+  if(!sendDoubleQSPI(txData1, 0x20, COUNT))
     Error_Handler();
 
-  if(!receiveDoubleQSPI(rxData1, 0x00, COUNT))
+  if(!receiveDoubleQSPI(rxData1, 0x20, COUNT))
     Error_Handler();
+
+  if(!sendDoubleQSPI(txData2, 0x00, COUNT))
+    Error_Handler();
+
+  if(!receiveDoubleQSPI(rxData2, 0x00, COUNT))
+    Error_Handler();
+
 
 #else
 
@@ -405,6 +417,7 @@ loop(void)
 
   if(!receiveSingleQSPI(rxData2, 0x20, COUNT))
     Error_Handler();
+#endif
 
   bool bDiff1 = false;
   bool bDiff2 = false;
@@ -421,7 +434,6 @@ loop(void)
 		cdc_puts((char *)"*");
   else
 		cdc_puts((char *)".");
-#endif
 
   uCount++;
 

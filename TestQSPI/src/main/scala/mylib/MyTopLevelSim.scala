@@ -21,7 +21,6 @@ object MyTopLevelSim {
       for(i <- 0 to 999)
       {
         sleep(25000)
-        println("leds = " + toBinary(dut.io.leds.toInt))
       }
 
       println("Sim Template Finished")

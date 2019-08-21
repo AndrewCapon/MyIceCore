@@ -157,7 +157,7 @@ int main(void)
   MX_USB_DEVICE_Init();
   MX_RTC_Init();
   MX_TIM6_Init();
-  MX_QUADSPI_Init(255); // 12 for 50mhz, 6 for 100mhz
+  MX_QUADSPI_Init(6); // 12 for 50mhz, 6 for 100mhz
   /* USER CODE BEGIN 2 */
   setup();
   /* USER CODE END 2 */
