@@ -88,14 +88,15 @@ And a simple testbed, place this in loop():
 ```
   uint8_t txData1[16] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
   uint8_t rxData1[16]	= {0};
-  if(!sendDoubleQSPI(txData1, 0x00, COUNT))
+  
+  if(!sendDoubleQSPI(txData1, 0x00, 16))
     Error_Handler();
 
-  if(!receiveDoubleQSPI(rxData1, 0x00, COUNT))
+  if(!receiveDoubleQSPI(rxData1, 0x00, 16))
     Error_Handler();
 
   bool bDiff = false;
-  for(int i =0; i < COUNT; i++)
+  for(int i =0; i < 16; i++)
   {
   	if(txData1[i] != rxData1[i])
   		bDiff = true;
