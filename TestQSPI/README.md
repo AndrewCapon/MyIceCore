@@ -1,4 +1,114 @@
-# Spinal HDL Template project for myStorm IceCore and Visual Studio Code
+# Dual QSPI Slave example with 256 byte memory
+
+On the STM side you need QSPI setup like this:
+
+```
+static void MX_QUADSPI_Init(void)
+{
+  hqspi.Instance = QUADSPI;
+  hqspi.Init.ClockPrescaler = 6;
+  hqspi.Init.FifoThreshold = 1;
+  hqspi.Init.SampleShifting = QSPI_SAMPLE_SHIFTING_NONE;
+  hqspi.Init.FlashSize = 7;
+  hqspi.Init.ChipSelectHighTime = QSPI_CS_HIGH_TIME_8_CYCLE;
+  hqspi.Init.ClockMode = QSPI_CLOCK_MODE_3;
+  hqspi.Init.FlashID = QSPI_FLASH_ID_1;
+  hqspi.Init.DualFlash = QSPI_DUALFLASH_DISABLE;
+  if (HAL_QSPI_Init(&hqspi) != HAL_OK)
+  {
+    Error_Handler();
+  }
+}
+```
+
+Functions to send and receive data:
+
+```
+bool sendDoubleQSPI(uint8_t *puBuffer, uint8_t uAddr, uint16_t uLen)
+{
+  QSPI_CommandTypeDef     sCommand;
+
+  sCommand.InstructionMode   = QSPI_INSTRUCTION_2_LINES;
+  sCommand.Instruction       = 0x01;
+  sCommand.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
+  sCommand.DataMode          = QSPI_DATA_2_LINES;
+  sCommand.DummyCycles       = 0;
+  sCommand.DdrMode           = QSPI_DDR_MODE_DISABLE;
+  sCommand.DdrHoldHalfCycle  = QSPI_DDR_HHC_ANALOG_DELAY;
+  sCommand.SIOOMode          = QSPI_SIOO_INST_EVERY_CMD;
+
+  sCommand.AddressMode       = QSPI_ADDRESS_2_LINES;
+  sCommand.AddressSize       = QSPI_ADDRESS_8_BITS;
+
+  sCommand.Address           = uAddr;
+  sCommand.NbData            = uLen;
+
+
+  if (HAL_QSPI_Command(&hqspi, &sCommand, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+  	return false;
+
+  if(HAL_QSPI_Transmit(&hqspi, puBuffer, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+  	return false;
+
+  return true;
+}
+
+bool receiveDoubleQSPI(uint8_t *puBuffer, uint8_t uAddr, uint16_t uLen)
+{
+  QSPI_CommandTypeDef     sCommand;
+
+  sCommand.InstructionMode   = QSPI_INSTRUCTION_2_LINES;
+  sCommand.Instruction       = 0x02;
+  sCommand.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
+  sCommand.DataMode          = QSPI_DATA_2_LINES;
+  sCommand.DummyCycles       = 4;
+  sCommand.DdrMode           = QSPI_DDR_MODE_DISABLE;
+  sCommand.DdrHoldHalfCycle  = QSPI_DDR_HHC_ANALOG_DELAY;
+  sCommand.SIOOMode          = QSPI_SIOO_INST_EVERY_CMD;
+
+  sCommand.AddressMode       = QSPI_ADDRESS_2_LINES;
+  sCommand.AddressSize       = QSPI_ADDRESS_8_BITS;
+
+  sCommand.Address           = uAddr;
+  sCommand.NbData            = uLen;
+
+
+  if (HAL_QSPI_Command(&hqspi, &sCommand, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+  	return false;
+
+  if(HAL_QSPI_Receive(&hqspi, puBuffer, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+  	return false;
+
+  return true;
+}
+```
+
+And a simple testbed, place this in loop():
+
+```
+  uint8_t txData1[16] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+  uint8_t rxData1[16]	= {0};
+  
+  if(!sendDoubleQSPI(txData1, 0x00, 16))
+    Error_Handler();
+
+  if(!receiveDoubleQSPI(rxData1, 0x00, 16))
+    Error_Handler();
+
+  bool bDiff = false;
+  for(int i =0; i < 16; i++)
+  {
+  	if(txData1[i] != rxData1[i])
+  		bDiff = true;
+  }
+
+  if(bDiff)
+    cdc_puts((char *)"*");
+  else
+    cdc_puts((char *)".");
+
+```
+
 
 ## Requirements
 
