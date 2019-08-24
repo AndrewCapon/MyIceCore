@@ -25,6 +25,223 @@ import spinal.lib.io.{TriStateOutput, TriStateArray, TriState, InOutWrapper}
 import scala.util.Random
 
 
+//16 bit version
+//Debug version from here down
+
+// class MyTopLevel extends Component{
+//   val io = new Bundle 
+//   {
+//     val leds       = out UInt(4 bits)
+
+//     val qd    = master(TriStateArray(2))
+//     val ss    = in Bool
+//     val sclk  = in Bool
+
+//     val dbg_io0  = out Bool
+//     val dbg_io1  = out Bool
+//     val dbg_ss   = out Bool
+//     val dbg_sclk = out Bool
+
+//     val dbg_1    = out Bool
+//     val dbg_2    = out Bool
+//     val dbg_3    = out Bool
+//     val dbg_4    = out Bool
+
+//     val dbgByte  = out Bits(8 bits)
+
+//     val dummy_clk = in Bool
+
+    
+//   }
+  
+//   // QSPI Slave Control
+//   val qspiSlaveCtrl = new QspiSlaveCtrlDual()
+//   qspiSlaveCtrl.io.qdin   := io.qd.read
+//   io.qd.write             := qspiSlaveCtrl.io.qdout
+//   qspiSlaveCtrl.io.ss     := io.ss
+//   qspiSlaveCtrl.io.sclk   := io.sclk
+//   qspiSlaveCtrl.io.resetn := False
+
+//   // RAM
+//   val memorySize = 1024*8
+//   val addrBits = log2Up(memorySize)
+
+//   def testData = for(addr <- 0 until (memorySize -1)) yield{
+//     U(addr)
+//   }
+//   val mem =  Mem(UInt(16 bits),initialContent = testData)
+// //  val mem = Mem(UInt(16 bits), wordCount = memorySize);
+//   val addrCounter = Reg(UInt(addrBits bits)) init(0)
+//  // val addrCounterDbg = Reg(UInt(addrBits bits)) init(0)
+
+
+//   // inout reading/writing
+//   val reading = Reg(Bool) init(True)
+//   when(reading){
+//     io.qd.writeEnable := 0
+//   } otherwise{
+//     io.qd.writeEnable := 3
+//   }
+
+
+//   // debug signals
+//   io.dbg_io0  := io.qd.read(0)
+//   io.dbg_io1  := io.qd.read(1)
+//   io.dbg_ss   := io.ss
+//   io.dbg_sclk := io.sclk
+//   io.leds := 0x00
+  
+ 
+
+
+//   // in and out
+//   val sendByte = Reg(UInt(8 bits)).addTag(crossClockDomain) init (0)
+//   qspiSlaveCtrl.io.txPayload := sendByte.asBits;
+
+//   //alternative to SpinalHDL StateMachine which is slow!
+//   object FSMState extends SpinalEnum {
+//     val sWait, sDecode, sDecodeAddressMSB, sDecodeAddressLSB, sReceiveSkipDummyByte, sReceiveLSB, sReceiveMSB, sSendSkipDummyByte, sSendLSB, sSendMSB = newElement()
+//   }
+
+//   val stateNext     = Reg(FSMState()) init(FSMState.sWait)
+//   val skipState  = Reg(FSMState()) init(FSMState.sWait)
+
+
+//   val rxReadyRise = qspiSlaveCtrl.io.rxReady.rise()
+//   val txReadyRise = qspiSlaveCtrl.io.txReady.rise()
+
+//   io.dbg_1 := rxReadyRise
+//   io.dbg_2 := txReadyRise
+//   io.dbg_3 := reading
+//   io.dbg_4 := False
+  
+
+//   val receiveWord = Reg(UInt(16 bits)) init(0)
+//   val sendWord = Reg(UInt(16 bits)) init(0)
+
+//   io.dbgByte := sendByte.asBits// addrCounter.asBits.resized //qspiSlaveCtrl.io.rxPayload
+  
+//   switch(stateNext){
+//     is(FSMState.sWait){
+//       reading := True
+//       when(io.ss === False){
+//         stateNext := FSMState.sDecode
+//         sendByte := 0
+//         sendWord := 0
+//       }
+//     }
+
+//     is(FSMState.sDecode){
+//       reading := True
+//       when(rxReadyRise)
+//       {
+//         switch(qspiSlaveCtrl.io.rxPayload ){
+//           is(0x01){
+//             skipState := FSMState.sReceiveSkipDummyByte
+//             stateNext := FSMState.sDecodeAddressMSB
+//           }
+//           is(0x02){
+//             skipState := FSMState.sSendSkipDummyByte
+//             stateNext := FSMState.sDecodeAddressMSB
+//           }
+//           // default{ // Causes issues??
+//           //   stateNext := FSMState.sWait
+//           // }
+//         }
+//       }
+//     }
+
+//     is(FSMState.sDecodeAddressMSB){
+//       reading := True
+//       when(rxReadyRise)
+//       {
+//         addrCounter := qspiSlaveCtrl.io.rxPayload.asUInt.resized
+//         stateNext := FSMState.sDecodeAddressLSB
+//       }
+//     }
+
+//     is(FSMState.sDecodeAddressLSB){
+//       reading := True
+//       when(rxReadyRise)
+//       {
+//         addrCounter := (addrCounter ## qspiSlaveCtrl.io.rxPayload).asUInt.resized
+//         stateNext := skipState
+//       }
+//     }
+
+//     is(FSMState.sReceiveSkipDummyByte){
+//       reading := False
+//       when(rxReadyRise)
+//       {
+//         stateNext := FSMState.sReceiveLSB
+//       } 
+//     }
+
+//     is(FSMState.sSendSkipDummyByte){
+//       reading := False
+//       sendWord := mem(addrCounter)
+//       sendByte := sendWord(7 downto 0)
+//       when(txReadyRise){
+//         stateNext := FSMState.sSendLSB
+//         addrCounter := addrCounter +1;
+//       }
+//     }
+
+//     is(FSMState.sReceiveLSB){
+//       reading := True
+//       when(rxReadyRise)
+//       {
+//         receiveWord := qspiSlaveCtrl.io.rxPayload.asUInt.resized
+//         stateNext := FSMState.sReceiveMSB
+//       } elsewhen(io.ss){
+//         stateNext := FSMState.sWait
+//       } 
+//     }
+
+//     is(FSMState.sReceiveMSB){
+//       reading := True
+//       when(rxReadyRise)
+//       {
+//         receiveWord := (receiveWord ## qspiSlaveCtrl.io.rxPayload).asUInt.resized
+//         mem(addrCounter) := receiveWord
+//         stateNext := FSMState.sReceiveLSB
+//         addrCounter := addrCounter +1;
+//       } elsewhen(io.ss){
+//         stateNext := FSMState.sWait
+//       }
+//     }
+
+//     is(FSMState.sSendLSB){
+//       reading := False
+//       when(txReadyRise)
+//       {
+//         sendWord := mem(addrCounter)
+//         sendByte := sendWord(7 downto 0)
+//         io.dbg_4 := True
+//         stateNext := FSMState.sSendMSB
+//       } elsewhen(io.ss){ 
+//         stateNext := FSMState.sWait
+//       }
+//     }
+
+//     is(FSMState.sSendMSB){
+//       reading := False
+//       when(txReadyRise)
+//       {
+//         sendByte := sendWord(15 downto 8)
+//         io.dbg_4 := True
+//         stateNext := FSMState.sSendLSB
+//         addrCounter := addrCounter +1;
+//       } elsewhen(io.ss){
+//         stateNext := FSMState.sWait
+//       }
+//     }
+//   }
+// }
+
+
+
+// 8 bit version from here
 class MyTopLevel extends Component{
   val io = new Bundle 
   {
@@ -42,8 +259,11 @@ class MyTopLevel extends Component{
   qspiSlaveCtrl.io.resetn := False
 
   // RAM
-  val mem = Mem(UInt(8 bits), wordCount = 256)
-
+  def testData = for(addr <- 0 until 255) yield{
+    U(addr)
+  }
+  val mem =  Mem(UInt(8 bits),initialContent = testData)
+  
   // inout reading/writing
   val reading = Reg(Bool) init(True)
   when(reading){
@@ -51,6 +271,10 @@ class MyTopLevel extends Component{
   } otherwise{
     io.qd.writeEnable := 3
   }
+
+
+  
+ 
 
 
   // in and out
@@ -64,12 +288,12 @@ class MyTopLevel extends Component{
 
   val stateNext = Reg(FSMState()) init(FSMState.sWait)
 
-  val counter = Reg(UInt(8 bits))
-  val skipByte = Reg(Bool) init(True)
+  val addrCounter = Reg(UInt(8 bits))
 
   reading := True
   val rxReadyRise = qspiSlaveCtrl.io.rxReady.rise()
   val txReadyRise = qspiSlaveCtrl.io.txReady.rise()
+
 
   switch(stateNext){
     is(FSMState.sWait){
@@ -77,14 +301,13 @@ class MyTopLevel extends Component{
         stateNext := FSMState.sWait
       } otherwise {
         stateNext := FSMState.sDecode
-        sendByte := 0x88
+        sendByte := 0x00
       }
     }
 
     is(FSMState.sDecode){
       when(rxReadyRise)
       {
-        skipByte := True
         switch(qspiSlaveCtrl.io.rxPayload ){
           is(0x01){
             stateNext := FSMState.sDecodeReceiveAddress
@@ -104,7 +327,7 @@ class MyTopLevel extends Component{
     is(FSMState.sDecodeReceiveAddress){
       when(rxReadyRise)
       {
-        counter := qspiSlaveCtrl.io.rxPayload.asUInt;
+        addrCounter := qspiSlaveCtrl.io.rxPayload.asUInt;
         stateNext := FSMState.sReceive
       } otherwise{
         stateNext := FSMState.sDecodeReceiveAddress
@@ -114,7 +337,7 @@ class MyTopLevel extends Component{
     is(FSMState.sDecodeSendAddress){
       when(rxReadyRise)
       {
-        counter := qspiSlaveCtrl.io.rxPayload.asUInt;
+        addrCounter := qspiSlaveCtrl.io.rxPayload.asUInt;
         stateNext := FSMState.sSend
       } otherwise{
         stateNext := FSMState.sDecodeSendAddress
@@ -124,8 +347,8 @@ class MyTopLevel extends Component{
     is(FSMState.sReceive){
       when(rxReadyRise)
       {
-        mem(counter) := qspiSlaveCtrl.io.rxPayload.asUInt;
-        counter:=counter+1
+        mem(addrCounter) := qspiSlaveCtrl.io.rxPayload.asUInt;
+        addrCounter:=addrCounter+1
       }      
 
       when(io.ss){
@@ -139,13 +362,8 @@ class MyTopLevel extends Component{
       reading := False
       when(txReadyRise)
       {
-        when(skipByte){
-          skipByte := False
-          sendByte := mem(counter)
-        } otherwise{
-          sendByte := mem(counter)
-          counter := counter+1
-        }
+        sendByte := mem(addrCounter)
+        addrCounter := addrCounter+1
       }      
 
       when(io.ss){
@@ -156,7 +374,9 @@ class MyTopLevel extends Component{
     }
   }
 }
- 
+
+
+
 //Define a custom SpinalHDL configuration with synchronous reset instead of the default asynchronous one. This configuration can be resued everywhere
 object MySpinalConfig extends SpinalConfig(defaultConfigForClockDomains = ClockDomainConfig(resetKind = SYNC))
 
@@ -168,6 +388,9 @@ object MyTopLevelVerilog
     MySpinalConfig.generateVerilog(new MyTopLevel)
   }
 }
+
+
+
 
 
 
@@ -206,11 +429,12 @@ object MyTopLevelVerilog
 //   qspiSlaveCtrl.io.ss     := io.ss
 //   qspiSlaveCtrl.io.sclk   := io.sclk
 //   qspiSlaveCtrl.io.resetn := False
+//   io.dbgByte := 0//qspiSlaveCtrl.io.dbgByte
 
 //   // RAM
 //   def testData = for(addr <- 0 until 255) yield{
-//      U(0xBA)
-//    }
+//     U(addr)
+//   }
 //   val mem =  Mem(UInt(8 bits),initialContent = testData)
   
 //   // inout reading/writing
@@ -227,7 +451,7 @@ object MyTopLevelVerilog
 //   io.dbg_io1  := io.qd.read(1)
 //   io.dbg_ss   := io.ss
 //   io.dbg_sclk := io.sclk
-//   io.leds := 0x00
+//   io.leds := 0x0f
   
  
 
@@ -243,25 +467,20 @@ object MyTopLevelVerilog
 
 //   val stateNext = Reg(FSMState()) init(FSMState.sWait)
 
-//   val counter = Reg(UInt(8 bits))
-//   val skipByte = Reg(Bool) init(True)
+//   val addrCounter = Reg(UInt(8 bits))
 
 //   reading := True
 //   val rxReadyRise = qspiSlaveCtrl.io.rxReady.rise()
 //   val txReadyRise = qspiSlaveCtrl.io.txReady.rise()
 
-//   io.dbg_1 := rxReadyRise;
-//   io.dbg_2 := txReadyRise;
-//   when(reading){
-//     io.dbg_3 := io.qd.read(0)
-//     io.dbg_4 := io.qd.read(1)
-//   } otherwise{
-//     io.dbg_3 := io.qd.write(0)
-//     io.dbg_4 := io.qd.write(1)
-//   }
+//   io.dbg_1 := rxReadyRise
+//   io.dbg_2 := txReadyRise
+//   io.dbg_3 := reading
+//   io.dbg_4 := False
+  
 // //  io.dbgByte := sendByte.asBits
-//   io.dbgByte := qspiSlaveCtrl.io.rxPayload
-// //  io.dbgByte := counter.asBits
+// //  io.dbgByte := qspiSlaveCtrl.io.txPayload //sendByte.asBits
+// //  io.dbgByte := addrCounter.asBits
 
 //   switch(stateNext){
 //     is(FSMState.sWait){
@@ -269,14 +488,13 @@ object MyTopLevelVerilog
 //         stateNext := FSMState.sWait
 //       } otherwise {
 //         stateNext := FSMState.sDecode
-//         sendByte := 0x88
+//         sendByte := 0x00
 //       }
 //     }
 
 //     is(FSMState.sDecode){
 //       when(rxReadyRise)
 //       {
-//         skipByte := True
 //         switch(qspiSlaveCtrl.io.rxPayload ){
 //           is(0x01){
 //             stateNext := FSMState.sDecodeReceiveAddress
@@ -296,7 +514,7 @@ object MyTopLevelVerilog
 //     is(FSMState.sDecodeReceiveAddress){
 //       when(rxReadyRise)
 //       {
-//         counter := qspiSlaveCtrl.io.rxPayload.asUInt;
+//         addrCounter := qspiSlaveCtrl.io.rxPayload.asUInt;
 //         stateNext := FSMState.sReceive
 //       } otherwise{
 //         stateNext := FSMState.sDecodeReceiveAddress
@@ -306,7 +524,7 @@ object MyTopLevelVerilog
 //     is(FSMState.sDecodeSendAddress){
 //       when(rxReadyRise)
 //       {
-//         counter := qspiSlaveCtrl.io.rxPayload.asUInt;
+//         addrCounter := qspiSlaveCtrl.io.rxPayload.asUInt;
 //         stateNext := FSMState.sSend
 //       } otherwise{
 //         stateNext := FSMState.sDecodeSendAddress
@@ -316,8 +534,8 @@ object MyTopLevelVerilog
 //     is(FSMState.sReceive){
 //       when(rxReadyRise)
 //       {
-//         mem(counter) := qspiSlaveCtrl.io.rxPayload.asUInt;
-//         counter:=counter+1
+//         mem(addrCounter) := qspiSlaveCtrl.io.rxPayload.asUInt;
+//         addrCounter:=addrCounter+1
 //       }      
 
 //       when(io.ss){
@@ -331,13 +549,8 @@ object MyTopLevelVerilog
 //       reading := False
 //       when(txReadyRise)
 //       {
-//         when(skipByte){
-//           skipByte := False
-//           sendByte := mem(counter)
-//         } otherwise{
-//           sendByte := mem(counter)
-//           counter := counter+1
-//         }
+//         sendByte := mem(addrCounter)
+//         addrCounter := addrCounter+1
 //       }      
 
 //       when(io.ss){

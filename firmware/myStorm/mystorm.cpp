@@ -334,6 +334,65 @@ bool receiveDoubleQSPI(uint8_t *puBuffer, uint8_t uAddr, uint16_t uLen)
 }
 
 
+bool sendDoubleQSPI16(uint16_t *puBuffer, uint16_t uAddr, uint16_t uLen)
+{
+  QSPI_CommandTypeDef     sCommand;
+
+  sCommand.InstructionMode   = QSPI_INSTRUCTION_2_LINES;
+  sCommand.Instruction       = 0x01;
+  sCommand.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
+  sCommand.DataMode          = QSPI_DATA_2_LINES;
+  sCommand.DummyCycles       = 4;
+  sCommand.DdrMode           = QSPI_DDR_MODE_DISABLE;
+  sCommand.DdrHoldHalfCycle  = QSPI_DDR_HHC_ANALOG_DELAY;
+  sCommand.SIOOMode          = QSPI_SIOO_INST_EVERY_CMD;
+
+  sCommand.AddressMode       = QSPI_ADDRESS_2_LINES;
+  sCommand.AddressSize			 = QSPI_ADDRESS_16_BITS;
+
+  sCommand.Address					 = uAddr;
+  sCommand.NbData       		 = uLen*2;
+
+
+  if (HAL_QSPI_Command(&hqspi, &sCommand, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+  	return false;
+
+  if(HAL_QSPI_Transmit(&hqspi, (uint8_t *)puBuffer, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+  	return false;
+
+  return true;
+}
+
+bool receiveDoubleQSPI16(uint16_t *puBuffer, uint16_t uAddr, uint16_t uLen)
+{
+  QSPI_CommandTypeDef     sCommand;
+
+  sCommand.InstructionMode   = QSPI_INSTRUCTION_2_LINES;
+  sCommand.Instruction       = 0x02;
+  sCommand.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
+  sCommand.DataMode          = QSPI_DATA_2_LINES;
+  sCommand.DummyCycles       = 4;
+  sCommand.DdrMode           = QSPI_DDR_MODE_DISABLE;
+  sCommand.DdrHoldHalfCycle  = QSPI_DDR_HHC_ANALOG_DELAY;
+  sCommand.SIOOMode          = QSPI_SIOO_INST_EVERY_CMD;
+
+  sCommand.AddressMode       = QSPI_ADDRESS_2_LINES;
+  sCommand.AddressSize			 = QSPI_ADDRESS_16_BITS;
+
+  sCommand.Address					 = uAddr;
+  sCommand.NbData       		 = uLen*2;
+
+
+  if (HAL_QSPI_Command(&hqspi, &sCommand, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+  	return false;
+
+  if(HAL_QSPI_Receive(&hqspi, (uint8_t *)puBuffer, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+  	return false;
+
+  return true;
+}
+
+
 /*
  * Loop function (called repeatedly)
  *	- wait for the start of a bitstream to be received on uart1 or usbcdc
@@ -375,31 +434,47 @@ loop(void)
 	//HAL_QSPI_Transmit(hqspi, buffer,1000);
 
   // Send Data
-  uint8_t txData1[16] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
-  uint8_t rxData1[16]	= {0};
-
-  uint8_t txData2[16] = {20,21,22,23,24,25,26,27,28,29,30,31,32,32,34,35};
-  uint8_t rxData2[16]	= {0};
-#define COUNT 8
+#define COUNT 256
 #define TEST_DOUBLE
 
 #ifdef TEST_DOUBLE
 
-//  uint8_t txLargeBuffer[256];
-//  if(!sendDoubleQSPI(txLargeBuffer, 0x00, 256))
-//  	Error_Handler();
+////  uint16_t txData1[16] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+////  uint16_t rxData1[16]	= {0};
+//  uint16_t txData1[COUNT];
+//  uint16_t rxData1[COUNT]	= {0};
+//
+////  if(!sendDoubleQSPI16(txData1, 0x00, COUNT))
+////    Error_Handler();
+//
+//  if(!receiveDoubleQSPI16(rxData1, 0, COUNT))
+//    Error_Handler();
 
-  if(!sendDoubleQSPI(txData1, 0x20, COUNT))
+
+  uint8_t txData1[COUNT];// = {0};//,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+  uint8_t rxData1[COUNT]	= {0};
+//
+//  uint8_t txData2[16] = {20,21,22,23,24,25,26,27,28,29,30,31,32,32,34,35};
+//  uint8_t rxData2[16]	= {0};
+
+  if(!sendDoubleQSPI(txData1, 0x00, COUNT))
     Error_Handler();
 
-  if(!receiveDoubleQSPI(rxData1, 0x20, COUNT))
+  if(!receiveDoubleQSPI(rxData1, 0x00, COUNT))
     Error_Handler();
 
-  if(!sendDoubleQSPI(txData2, 0x00, COUNT))
-    Error_Handler();
 
-  if(!receiveDoubleQSPI(rxData2, 0x00, COUNT))
-    Error_Handler();
+  bool bDiff = false;
+  for(int i =0; i < COUNT; i++)
+  {
+  	if(txData1[i] != rxData1[i])
+  		bDiff = true;
+  }
+
+  if(bDiff)
+		cdc_puts((char *)"*");
+  else
+		cdc_puts((char *)".");
 
 
 #else
@@ -417,7 +492,6 @@ loop(void)
 
   if(!receiveSingleQSPI(rxData2, 0x20, COUNT))
     Error_Handler();
-#endif
 
   bool bDiff1 = false;
   bool bDiff2 = false;
@@ -434,6 +508,8 @@ loop(void)
 		cdc_puts((char *)"*");
   else
 		cdc_puts((char *)".");
+#endif
+
 
   uCount++;
 

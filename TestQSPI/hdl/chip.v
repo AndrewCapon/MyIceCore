@@ -22,41 +22,75 @@ begin
 end
 endmodule
 
+//`define DEBUG
+`ifdef DEBUG
+//debug version here down
 module chip (
-  // 25Hz clock input
-  input  clk,
+    // 25Hz clock input
+    input  clk,
 
-  inout  [1:0] qd,
-  input  dcs,
-  input  dsck,
+    inout  [1:0] qd,
+    input  dcs,
+    input  dsck,
 
-  // led outputs
-  output [3:0] led,
-);
+    // led outputs
+    output [3:0] led,
 
-wire clk200;
-wire clk100;
-wire locked;
+    // gpio
+    output prb00,
+    output prb01,
+    output prb02,
+    output prb03,
+    output prb04,
+    output prb05,
+    output prb06,
+    output prb07,
+    output prb08,
+    output prb09,
+    output prb10,
+    output prb11,
+    output prb12,
+    output prb13,
+    output prb14,
+    output prb15,
+  );
 
-
-pll200 clock_200 (
-  .clock_in(clk),
-  .clock_out(clk200),
-  .locked(locked)
-);
-
-frequency_divider_by2 clock_100(
-  .clk(clk200),
-  .out_clk(clk100)
-); 
+  wire clk275;
+  wire clk200;
+  wire clk100;
+  wire locked;
   
-wire useClk = clk100;
+  reg rst;
 
-assign led = 'he;
+  reg [12:0] resetCounter;
+  always @ (posedge clk) begin
+    if(resetCounter < 1024) begin
+      rst <= 1;
+      resetCounter <= resetCounter+1;
+    end else begin
+      rst <= 0;
+    end
+  end
 
-wire [1:0] io_qd_read, io_qd_write, io_qd_writeEnable;
 
-SB_IO #(
+
+  pll200 clock_200 (
+    .clock_in(clk),
+    .clock_out(clk200),
+    .locked(locked)
+  );
+  
+  frequency_divider_by2 clock_100(
+    .clk(clk200),
+    .out_clk(clk100)
+  ); 
+   
+  wire useClk = clk100;
+
+
+  wire [1:0] io_qd_read, io_qd_write, io_qd_writeEnable;
+
+  SB_IO #(
     .PIN_TYPE(6'b 1010_01),
     .PULLUP(1'b0)
   ) qd1 [1:0] (
@@ -66,105 +100,108 @@ SB_IO #(
     .D_IN_0(io_qd_read)
   );
 
-MyTopLevel top_level (
-  .io_qd_read(io_qd_read),
-  .io_qd_write(io_qd_write),
-  .io_qd_writeEnable(io_qd_writeEnable),
-  .io_ss(dcs),
-  .io_sclk(dsck),
+  MyTopLevel top_level (
+    .io_leds(led),
+    .io_qd_read(io_qd_read),
+    .io_qd_write(io_qd_write),
+    .io_qd_writeEnable(io_qd_writeEnable),
+    .io_ss(dcs),
+    .io_sclk(dsck),
 
-  .clk(useClk),
-  .reset(0),
-);
+    .io_dbg_1(prb00),
+    .io_dbg_2(prb01),
+    .io_dbg_3(prb02),
+    .io_dbg_4(prb03),
 
-// debug version here down
-// module chip (
-//     // 25Hz clock input
-//     input  clk,
+    .io_dbg_io0(prb04),
+    .io_dbg_io1(prb05),
+    .io_dbg_ss(prb06),
+    .io_dbg_sclk(prb07),
 
-//     inout  [1:0] qd,
-//     input  dcs,
-//     input  dsck,
+    .io_dbgByte({prb08, prb09, prb10, prb11, prb12, prb13, prb14, prb15}),
 
-//     // led outputs
-//     output [3:0] led,
+    .clk(useClk),
+    .io_dummy_clk(useClk),
 
-//     // gpio
-//     output prb00,
-//     output prb01,
-//     output prb02,
-//     output prb03,
-//     output prb04,
-//     output prb05,
-//     output prb06,
-//     output prb07,
-//     output prb08,
-//     output prb09,
-//     output prb10,
-//     output prb11,
-//     output prb12,
-//     output prb13,
-//     output prb14,
-//     output prb15,
-//   );
+    .reset(rst),
+  );
 
-//   wire clk275;
-//   wire clk200;
-//   wire clk100;
-//   wire locked;
+`else // not DEBUG
 
+// no debug  version
 
-//   pll200 clock_200 (
-//     .clock_in(clk),
-//     .clock_out(clk200),
-//     .locked(locked)
-//   );
+module chip (
+    // 25Hz clock input
+    input  clk,
+
+    inout  [1:0] qd,
+    input  dcs,
+    input  dsck,
+
+    // led outputs
+    output [3:0] led,
+
+  );
+
+  wire clk275;
+  wire clk200;
+  wire clk100;
+  wire locked;
   
-//   frequency_divider_by2 clock_100(
-//     .clk(clk200),
-//     .out_clk(clk100)
-//   ); 
+  reg rst;
+
+  reg [12:0] resetCounter;
+  always @ (posedge clk) begin
+    if(resetCounter < 1024) begin
+      rst <= 1;
+      resetCounter <= resetCounter+1;
+    end else begin
+      rst <= 0;
+    end
+  end
+
+
+
+  pll200 clock_200 (
+    .clock_in(clk),
+    .clock_out(clk200),
+    .locked(locked)
+  );
+  
+  frequency_divider_by2 clock_100(
+    .clk(clk200),
+    .out_clk(clk100)
+  ); 
    
-//   wire useClk = clk100;
-// `endif
+  wire useClk = clk100;
 
-// wire [1:0] io_qd_read, io_qd_write, io_qd_writeEnable;
 
-// SB_IO #(
-//     .PIN_TYPE(6'b 1010_01),
-//     .PULLUP(1'b0)
-//   ) qd1 [1:0] (
-//     .PACKAGE_PIN(qd),
-//     .OUTPUT_ENABLE(io_qd_writeEnable),
-//     .D_OUT_0(io_qd_write),
-//     .D_IN_0(io_qd_read)
-//   );
+  wire [1:0] io_qd_read, io_qd_write, io_qd_writeEnable;
 
-// MyTopLevel top_level (
-//   .io_leds(led),
-//   .io_qd_read(io_qd_read),
-//   .io_qd_write(io_qd_write),
-//   .io_qd_writeEnable(io_qd_writeEnable),
-//   .io_ss(dcs),
-//   .io_sclk(dsck),
+  SB_IO #(
+    .PIN_TYPE(6'b 1010_01),
+    .PULLUP(1'b0)
+  ) qd1 [1:0] (
+    .PACKAGE_PIN(qd),
+    .OUTPUT_ENABLE(io_qd_writeEnable),
+    .D_OUT_0(io_qd_write),
+    .D_IN_0(io_qd_read)
+  );
 
-//   .io_dbg_1(prb00),
-//   .io_dbg_2(prb01),
-//   .io_dbg_3(prb02),
-//   .io_dbg_4(prb03),
+  MyTopLevel top_level (
+    .io_qd_read(io_qd_read),
+    .io_qd_write(io_qd_write),
+    .io_qd_writeEnable(io_qd_writeEnable),
+    .io_ss(dcs),
+    .io_sclk(dsck),
 
-//   .io_dbg_io0(prb04),
-//   .io_dbg_io1(prb05),
-//   .io_dbg_ss(prb06),
-//   .io_dbg_sclk(prb07),
+    .clk(useClk),
 
-//   .io_dbgByte({prb08, prb09, prb10, prb11, prb12, prb13, prb14, prb15}),
+    .reset(rst),
+  );
 
-//   .clk(useClk),
-//   .io_dummy_clk(useClk),
+`endif // DEBUG
 
-//   .reset(0),
-// );
 
 
 endmodule

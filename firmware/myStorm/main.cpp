@@ -103,7 +103,7 @@ static void MX_USART1_UART_Init(void);
 static void MX_I2C2_Init(void);
 static void MX_RTC_Init(void);
 static void MX_TIM6_Init(void);
-static void MX_QUADSPI_Init(uint32_t uDivider);
+static void MX_QUADSPI_Init(void);
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
 
@@ -157,7 +157,7 @@ int main(void)
   MX_USB_DEVICE_Init();
   MX_RTC_Init();
   MX_TIM6_Init();
-  MX_QUADSPI_Init(6); // 12 for 50mhz, 6 for 100mhz
+  MX_QUADSPI_Init();
   /* USER CODE BEGIN 2 */
   setup();
   /* USER CODE END 2 */
@@ -519,26 +519,14 @@ static void MX_I2C2_Init(void)
   * @param None
   * @retval None
   */
-static void MX_QUADSPI_Init(uint32_t uDivider)
+static void MX_QUADSPI_Init(void)
 {
-
-  /* USER CODE BEGIN QUADSPI_Init 0 */
-
-  /* USER CODE END QUADSPI_Init 0 */
-
-  /* USER CODE BEGIN QUADSPI_Init 1 */
-
-  /* USER CODE END QUADSPI_Init 1 */
-  /* QUADSPI parameter configuration*/
   hqspi.Instance = QUADSPI;
-//  hqspi.Init.ClockPrescaler = 3; // 200mhz fpga clock
-//  hqspi.Init.ClockPrescaler = 2; // 275mhz fpga clock
-//  hqspi.Init.ClockPrescaler = 255;
-  hqspi.Init.ClockPrescaler = uDivider;
+  hqspi.Init.ClockPrescaler = 6;
   hqspi.Init.FifoThreshold = 1;
   hqspi.Init.SampleShifting = QSPI_SAMPLE_SHIFTING_NONE;
   hqspi.Init.FlashSize = 31;
-  hqspi.Init.ChipSelectHighTime = QSPI_CS_HIGH_TIME_8_CYCLE;
+  hqspi.Init.ChipSelectHighTime = QSPI_CS_HIGH_TIME_1_CYCLE;
   hqspi.Init.ClockMode = QSPI_CLOCK_MODE_3;
   hqspi.Init.FlashID = QSPI_FLASH_ID_1;
   hqspi.Init.DualFlash = QSPI_DUALFLASH_DISABLE;
@@ -546,13 +534,6 @@ static void MX_QUADSPI_Init(uint32_t uDivider)
   {
     Error_Handler();
   }
-
-
-
-  /* USER CODE BEGIN QUADSPI_Init 2 */
-
-  /* USER CODE END QUADSPI_Init 2 */
-
 }
 
 /**
