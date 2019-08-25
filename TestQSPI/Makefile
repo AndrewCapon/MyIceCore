@@ -21,7 +21,7 @@ chip.bin: hdl/* MyTopLevel.v
 #	arachne-pnr -m 100 -r -d 8k -P tq144:4k -p hdl/chip.pcf chip.blif -o chip.txt
 #	icepack chip.txt chip.bin
 	yosys -q -p "synth_ice40 -top chip -json chip.json" hdl/*.v MyTopLevel.v
-	nextpnr-ice40 --package tq144:4k --hx8k --json chip.json --pcf hdl/chip.pcf --asc chip.asc --freq 100
+	nextpnr-ice40 --package tq144:4k --hx8k --json chip.json --pcf hdl/chip.pcf --asc chip.asc --freq 200 --timing-allow-fail
 	icepack chip.asc chip.bin                                      
 
 

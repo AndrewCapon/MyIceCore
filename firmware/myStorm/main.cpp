@@ -522,7 +522,7 @@ static void MX_I2C2_Init(void)
 static void MX_QUADSPI_Init(void)
 {
   hqspi.Instance = QUADSPI;
-  hqspi.Init.ClockPrescaler = 6;
+  hqspi.Init.ClockPrescaler = 255;
   hqspi.Init.FifoThreshold = 1;
   hqspi.Init.SampleShifting = QSPI_SAMPLE_SHIFTING_NONE;
   hqspi.Init.FlashSize = 31;

@@ -434,34 +434,34 @@ loop(void)
 	//HAL_QSPI_Transmit(hqspi, buffer,1000);
 
   // Send Data
-#define COUNT 256
+#define COUNT 4
 #define TEST_DOUBLE
 
 #ifdef TEST_DOUBLE
 
-////  uint16_t txData1[16] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
-////  uint16_t rxData1[16]	= {0};
+  uint16_t txData1[16] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+  uint16_t rxData1[16]	= {0};
 //  uint16_t txData1[COUNT];
 //  uint16_t rxData1[COUNT]	= {0};
 //
-////  if(!sendDoubleQSPI16(txData1, 0x00, COUNT))
-////    Error_Handler();
+  if(!sendDoubleQSPI16(txData1, 0x00, COUNT))
+    Error_Handler();
+
+  if(!receiveDoubleQSPI16(rxData1, 0, COUNT))
+    Error_Handler();
+
+
+//  uint8_t txData1[COUNT];// = {0};//,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+//  uint8_t rxData1[COUNT]	= {0};
+////
+////  uint8_t txData2[16] = {20,21,22,23,24,25,26,27,28,29,30,31,32,32,34,35};
+////  uint8_t rxData2[16]	= {0};
 //
-//  if(!receiveDoubleQSPI16(rxData1, 0, COUNT))
+//  if(!sendDoubleQSPI(txData1, 0x00, COUNT))
 //    Error_Handler();
-
-
-  uint8_t txData1[COUNT];// = {0};//,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
-  uint8_t rxData1[COUNT]	= {0};
 //
-//  uint8_t txData2[16] = {20,21,22,23,24,25,26,27,28,29,30,31,32,32,34,35};
-//  uint8_t rxData2[16]	= {0};
-
-  if(!sendDoubleQSPI(txData1, 0x00, COUNT))
-    Error_Handler();
-
-  if(!receiveDoubleQSPI(rxData1, 0x00, COUNT))
-    Error_Handler();
+//  if(!receiveDoubleQSPI(rxData1, 0x00, COUNT))
+//    Error_Handler();
 
 
   bool bDiff = false;

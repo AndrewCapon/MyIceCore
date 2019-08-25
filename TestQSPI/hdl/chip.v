@@ -22,7 +22,7 @@ begin
 end
 endmodule
 
-//`define DEBUG
+`define DEBUG
 `ifdef DEBUG
 //debug version here down
 module chip (
@@ -84,8 +84,8 @@ module chip (
     .clk(clk200),
     .out_clk(clk100)
   ); 
-   
-  wire useClk = clk100;
+      
+  wire useClk = clk;
 
 
   wire [1:0] io_qd_read, io_qd_write, io_qd_writeEnable;
