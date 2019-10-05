@@ -21,7 +21,7 @@ begin
      out_clk <= ~out_clk;	
 end
 endmodule
-
+ 
 `define DEBUG
 `ifdef DEBUG
 //debug version here down
@@ -58,6 +58,8 @@ module chip (
   wire clk275;
   wire clk200;
   wire clk100;
+  wire clk80;
+  wire clk95;
   wire locked;
   
   reg rst;
@@ -70,10 +72,21 @@ module chip (
     end else begin
       rst <= 0;
     end
-  end
+  end 
+ 
+  // pll80 clock_80 (
+  //   .clock_in(clk),
+  //   .clock_out(clk80),
+  //   .locked(locked)
+  // );
+ 
+  // pll95 clock_95 (
+  //   .clock_in(clk),
+  //   .clock_out(clk95),
+  //   .locked(locked)
+  // );
 
-
-
+ 
   pll200 clock_200 (
     .clock_in(clk),
     .clock_out(clk200),
@@ -84,7 +97,7 @@ module chip (
     .clk(clk200),
     .out_clk(clk100)
   ); 
-      
+       
   wire useClk = clk;
 
 
@@ -129,7 +142,6 @@ module chip (
 `else // not DEBUG
 
 // no debug  version
-
 module chip (
     // 25Hz clock input
     input  clk,
@@ -146,6 +158,7 @@ module chip (
   wire clk275;
   wire clk200;
   wire clk100;
+  wire clk95;
   wire locked;
   
   reg rst;
@@ -160,22 +173,28 @@ module chip (
     end
   end
 
-
-
-  pll200 clock_200 (
+  pll95 clock_95 (
     .clock_in(clk),
-    .clock_out(clk200),
+    .clock_out(clk95),
     .locked(locked)
   );
+
+
+  // pll200 clock_200 (
+  //   .clock_in(clk),
+  //   .clock_out(clk200),
+  //   .locked(locked)
+  // );
   
-  frequency_divider_by2 clock_100(
-    .clk(clk200),
-    .out_clk(clk100)
-  ); 
+  // frequency_divider_by2 clock_100(
+  //   .clk(clk200),
+  //   .out_clk(clk100)
+  // ); 
+       
+  wire useClk = clk;
+
+  assign led = 'hf;
    
-  wire useClk = clk100;
-
-
   wire [1:0] io_qd_read, io_qd_write, io_qd_writeEnable;
 
   SB_IO #(
@@ -194,9 +213,7 @@ module chip (
     .io_qd_writeEnable(io_qd_writeEnable),
     .io_ss(dcs),
     .io_sclk(dsck),
-
     .clk(useClk),
-
     .reset(rst),
   );
 

@@ -86,7 +86,8 @@ LIB	= $(OUTPUT_DIR)/drivers.a
 # C defines
 C_DEFS =  \
 -DUSE_HAL_DRIVER \
--DSTM32F730xx
+-DSTM32F730xx \
+-DCADFirmware
 
 GCCPATH = /Development/IceCore/gcc-arm-none-eabi-8-2018-q4-major/bin
 

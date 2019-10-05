@@ -6,6 +6,86 @@ import spinal.lib.{BufferCC, master, IMasterSlave}
 import spinal.lib.io.{TriStateOutput, TriStateArray, TriState}
 import spinal.lib.fsm._
 
+case class QspiSlaveCtrlDual() extends Component{
+  val io = new Bundle {
+    val sclk = in Bool
+    val qdin = in Bits(2 bits)
+    val qdout = out Bits(2 bits)
+    val ss   = in Bool
+    val resetn = in Bool
+
+    val txPayload = in Bits(8 bits)
+    val rxPayload = out Bits(8 bits)
+
+    val rxReady = out Bool
+    val txReady = out Bool
+
+    var dbg = out Bits(8 bits)
+  }
+
+  val qspiRxCoreClockDomain = ClockDomain(io.sclk, io.ss);
+  val qspiRxArea = new ClockingArea(qspiRxCoreClockDomain){
+    val readyFlag = Reg(Bool) init False
+    val counter = Reg(UInt(2 bits)) init 0
+    val buffer = Reg(Bits(8 bits)).addTag(crossClockDomain) init 0
+    var inseq = Reg(Bool).addTag(crossClockDomain)
+
+    // shift into buffer
+    buffer := (buffer ## io.qdin(1) ## io.qdin(0)).resized
+
+    // increment bit counter
+    counter := counter +1
+
+    // readyflag
+    when(counter === 3){
+      inseq := ~inseq
+    }
+
+    // assignments
+    io.rxPayload := buffer
+  }
+  
+
+  val qspiTxClockDomainConfig = ClockDomainConfig(clockEdge = FALLING)
+  val qspiTxCoreClockDomain = ClockDomain(io.sclk, io.ss, config = qspiTxClockDomainConfig)
+  val qspiTxArea = new ClockingArea(qspiTxCoreClockDomain){
+    val counter = Reg(UInt(2 bits)) init(0)
+    val rspBit0 = Reg(Bool) init False
+    val rspBit1 = Reg(Bool) init False
+    var outseq  = Reg(Bool).addTag(crossClockDomain)
+
+    // write out to qd
+    rspBit1 := io.txPayload(7 - (counter<<1))
+    rspBit0 := io.txPayload(6 - (counter<<1))
+
+    // increment bit counter
+    counter := counter +1
+
+    // readyflag
+    when(counter === 3){
+      outseq := ~outseq
+    }
+
+    // assignments
+    io.qdout(0) := rspBit0
+    io.qdout(1) := rspBit1
+  }
+
+
+  // registers in main clk domain
+  val outsync = Reg(Bits(3 bits))
+  val insync = Reg(Bits(3 bits))
+
+	// synchronise inseq/outseq across clock domains
+  outsync := qspiTxArea.outseq ## outsync(2 downto 1)
+  insync := qspiRxArea.inseq ## insync(2 downto 1)
+  
+  io.txReady := (outsync(1) =/= outsync(0))
+  io.rxReady := (insync(1) =/= insync(0))
+  
+  io.dbg := 0
+}
+
 
 // case class QspiSlaveCtrlDual16() extends Component{
 //   val io = new Bundle {
@@ -77,144 +157,77 @@ import spinal.lib.fsm._
 
 
 
-case class QspiSlaveCtrlDual() extends Component{
-  val io = new Bundle {
-    val sclk = in Bool
-    val qdin = in Bits(2 bits)
-    val qdout = out Bits(2 bits)
-    val ss   = in Bool
-    val resetn = in Bool
 
-    val txPayload = in Bits(8 bits)
-    val rxPayload = out Bits(8 bits)
 
-    val rxReady = out Bool
-    val txReady = out Bool
-  }
 
-  val qspiRxCoreClockDomain = ClockDomain(io.sclk, io.ss);
-  val qspiRxArea = new ClockingArea(qspiRxCoreClockDomain){
-    val readyFlag = Reg(Bool) init False
-    val counter = Reg(UInt(2 bits)) init 0
-    val buffer = Reg(Bits(8 bits)).addTag(crossClockDomain) init 0
 
-    // shift into buffer
-    buffer := (buffer ## io.qdin(1) ## io.qdin(0)).resized
 
-    // increment bit counter
-    counter := counter +1
+// case class QspiSlaveCtrl() extends Component{
+//   val io = new Bundle {
+//     val sclk = in Bool
+//     val io0  = in Bool
+//     val io1  = out Bool
+//     val ss   = in Bool
+//     val resetn = in Bool
 
-    // readyflag
-    readyFlag := counter === 3
+//     val txPayload = in Bits(8 bits)
+//     val rxPayload = out Bits(8 bits)
 
-    // assignments
-    io.rxPayload := buffer
-  }
+//     val rxReady = out Bool
+//     val txReady = out Bool
+//   }
+
+//   val qspiRxCoreClockDomain = ClockDomain(io.sclk, io.ss);
+//   val qspiRxArea = new ClockingArea(qspiRxCoreClockDomain){
+//     val readyFlag = Reg(Bool) init False
+//     val counter = Reg(UInt(3 bits)) init 0
+//     val buffer = Reg(Bits(8 bits)).addTag(crossClockDomain) init 0
+//     val rspBit = Reg(Bool)  init False
+
+
+//     // shift into buffer
+//     buffer := (buffer ## io.io0).resized
+
+//     // increment bit counter
+//     counter := counter +1
+
+//     // readyflag
+//     readyFlag := counter === 7
+
+//     // assignments
+//     io.rxPayload := buffer
+
+//   }
   
 
-  val qspiTxClockDomainConfig = ClockDomainConfig(clockEdge = FALLING)
-  val qspiTxCoreClockDomain = ClockDomain(io.sclk, io.ss, config = qspiTxClockDomainConfig)
-  val qspiTxArea = new ClockingArea(qspiTxCoreClockDomain){
-    val readyFlag = Reg(Bool) init False
-    val counter = Reg(UInt(2 bits)) init(0)
-    val rspBit0 = Reg(Bool) init False
-    val rspBit1 = Reg(Bool) init False
-    
-    // write out to qd
-    rspBit1 := io.txPayload(7 - (counter<<1))
-    rspBit0 := io.txPayload(6 - (counter<<1))
-
-    // increment bit counter
-    counter := counter +1
-
-    // readyflag
-    readyFlag := counter === 3
-
-    // assignments
-    io.qdout(0) := rspBit0
-    io.qdout(1) := rspBit1
-  }
-
-  // Fabric Clock Domain
-  val syncedRxReadyFlag = BufferCC(qspiRxArea.readyFlag)
-  val syncedTxReadyFlag = BufferCC(qspiTxArea.readyFlag)
-
-  // asignments
-  io.rxReady := syncedRxReadyFlag
-  io.txReady := syncedTxReadyFlag
-
-}
+// val qspiTxClockDomainConfig = ClockDomainConfig(clockEdge = FALLING)
+// val qspiTxCoreClockDomain = ClockDomain(io.sclk, io.ss, config = qspiTxClockDomainConfig)
+// val qspiTxArea = new ClockingArea(qspiTxCoreClockDomain){
+//   val readyFlag = Reg(Bool) init False
+//   val counter = Reg(UInt(3 bits)) init(0)
+//   val buffer = Reg(Bits(8 bits)).addTag(crossClockDomain) init 0
+//   val rspBit = Reg(Bool) init False
 
 
+//   // write out to io1
+//   rspBit := io.txPayload(7 - counter)
 
+//   // increment bit counter
+//   counter := counter +1
 
+//   // readyflag
+//   readyFlag := counter === 0x00
 
-case class QspiSlaveCtrl() extends Component{
-  val io = new Bundle {
-    val sclk = in Bool
-    val io0  = in Bool
-    val io1  = out Bool
-    val ss   = in Bool
-    val resetn = in Bool
+//   // assignments
+//   io.io1 := rspBit
+// }
 
-    val txPayload = in Bits(8 bits)
-    val rxPayload = out Bits(8 bits)
+// // Fabric Clock Domain
+// val syncedRxReadyFlag = BufferCC(qspiRxArea.readyFlag)
+// val syncedTxReadyFlag = BufferCC(qspiTxArea.readyFlag)
 
-    val rxReady = out Bool
-    val txReady = out Bool
-  }
-
-  val qspiRxCoreClockDomain = ClockDomain(io.sclk, io.ss);
-  val qspiRxArea = new ClockingArea(qspiRxCoreClockDomain){
-    val readyFlag = Reg(Bool) init False
-    val counter = Reg(UInt(3 bits)) init 0
-    val buffer = Reg(Bits(8 bits)).addTag(crossClockDomain) init 0
-    val rspBit = Reg(Bool)  init False
-
-
-    // shift into buffer
-    buffer := (buffer ## io.io0).resized
-
-    // increment bit counter
-    counter := counter +1
-
-    // readyflag
-    readyFlag := counter === 7
-
-    // assignments
-    io.rxPayload := buffer
-
-  }
-  
-
-val qspiTxClockDomainConfig = ClockDomainConfig(clockEdge = FALLING)
-val qspiTxCoreClockDomain = ClockDomain(io.sclk, io.ss, config = qspiTxClockDomainConfig)
-val qspiTxArea = new ClockingArea(qspiTxCoreClockDomain){
-  val readyFlag = Reg(Bool) init False
-  val counter = Reg(UInt(3 bits)) init(0)
-  val buffer = Reg(Bits(8 bits)).addTag(crossClockDomain) init 0
-  val rspBit = Reg(Bool) init False
-
-
-  // write out to io1
-  rspBit := io.txPayload(7 - counter)
-
-  // increment bit counter
-  counter := counter +1
-
-  // readyflag
-  readyFlag := counter === 0x00
-
-  // assignments
-  io.io1 := rspBit
-}
-
-// Fabric Clock Domain
-val syncedRxReadyFlag = BufferCC(qspiRxArea.readyFlag)
-val syncedTxReadyFlag = BufferCC(qspiTxArea.readyFlag)
-
-// asignments
-io.rxReady := syncedRxReadyFlag
-io.txReady := syncedTxReadyFlag
-}
+// // asignments
+// io.rxReady := syncedRxReadyFlag
+// io.txReady := syncedTxReadyFlag
+// }
 

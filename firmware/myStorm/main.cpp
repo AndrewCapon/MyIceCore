@@ -81,7 +81,11 @@ SPI_HandleTypeDef hspi3;
 TIM_HandleTypeDef htim6;
 
 UART_HandleTypeDef huart1;
+#ifdef CADFirmware
+DMA_HandleTypeDef hdma_quadspi;
+#else
 DMA_HandleTypeDef hdma_usart1_tx;
+#endif
 
 /* USER CODE BEGIN PV */
 #ifdef __cplusplus
@@ -522,8 +526,8 @@ static void MX_I2C2_Init(void)
 static void MX_QUADSPI_Init(void)
 {
   hqspi.Instance = QUADSPI;
-  hqspi.Init.ClockPrescaler = 255;
-  hqspi.Init.FifoThreshold = 1;
+  hqspi.Init.ClockPrescaler = 255; // needs 11 for 16bit memory, 7 for 8 bit @95mhz !
+  hqspi.Init.FifoThreshold = 1;//32;
   hqspi.Init.SampleShifting = QSPI_SAMPLE_SHIFTING_NONE;
   hqspi.Init.FlashSize = 31;
   hqspi.Init.ChipSelectHighTime = QSPI_CS_HIGH_TIME_1_CYCLE;

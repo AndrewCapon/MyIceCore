@@ -80,7 +80,6 @@ module qspislave_rx #(parameter DWIDTH=1) (
 	input [3:0] QD,
 	output rxready,
 	output [7:0] rxdata,
-//	output [3:0] dbg
 );
 
 	// registers in QCK clock domain
@@ -100,8 +99,6 @@ module qspislave_rx #(parameter DWIDTH=1) (
 	// wiring to load data from 1 or 4 data lines into shiftreg
 	wire [8:0] shiftin = {shiftreg[8-DWIDTH:0],QD[DWIDTH-1:0]};
 
-//	reg [3:0] r_dbg;
-//	assign dbg = r_dbg;
 
 	// capture incoming data on rising SPI clock edge
 	always @(posedge QCK or posedge QSS) begin
@@ -156,16 +153,13 @@ module qspislave_tx #(parameter DWIDTH=1) (
 
 	// shift outgoing data on falling SPI clock edge
 	always @(negedge QCK or posedge QSS) begin
-//		r_dbg <=0;
 		if (QSS) begin
 			shiftreg <= 0;
 		end else begin
 			if (shiftout[7:0] == 0) begin
-//				r_dbg[0] <=1;
 				outseq <= ~outseq;
 				shiftreg <= {txdata,1'b1};
 			end else begin
-//				r_dbg[1] <=1;
 				shiftreg <= shiftout;
 			end
 		end

@@ -37,7 +37,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "errno.h"
 #include "mystorm.h"
 
-#define CADFirmware
+
 
 
 #ifdef CADFirmware
@@ -87,6 +87,16 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart);
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart);
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);
+
+void HAL_QSPI_TxCpltCallback(QSPI_HandleTypeDef *hqspi);
+void HAL_QSPI_CmdCpltCallback (QSPI_HandleTypeDef *hqspi);
+void 	HAL_QSPI_RxCpltCallback (QSPI_HandleTypeDef *hqspi);
+void 	HAL_QSPI_RxHalfCpltCallback (QSPI_HandleTypeDef *hqspi);
+void 	HAL_QSPI_TxHalfCpltCallback (QSPI_HandleTypeDef *hqspi);
+void 	HAL_QSPI_FifoThresholdCallback (QSPI_HandleTypeDef *hqspi);
+void 	HAL_QSPI_StatusMatchCallback (QSPI_HandleTypeDef *hqspi);
+void 	HAL_QSPI_TimeOutCallback (QSPI_HandleTypeDef *hqspi);
+void 	HAL_QSPI_ErrorCallback (QSPI_HandleTypeDef *hqspi);
 
 /* Classses */
 class Fpga {
@@ -152,6 +162,7 @@ Flash flash(&hspi3, IMGSIZE);
 #endif
 
 
+bool g_bQSPIBusy = false;
 
 /*
  * Setup function (called once at powerup)
@@ -215,6 +226,66 @@ setup(void)
 
 }
 
+bool freeQSPI(void)
+{
+	g_bQSPIBusy = false;
+}
+
+bool waitQSPI(void)
+{
+	// need timeout
+	while(g_bQSPIBusy)
+	{
+	}
+
+	return true;
+}
+
+bool transmitQSPI(QSPI_CommandTypeDef &command, uint8_t *puBuffer)
+{
+  bool bResult = false;
+
+  if(waitQSPI())
+  {
+    g_bQSPIBusy = true;
+
+//  	if (HAL_QSPI_Command(&hqspi, &command, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) == HAL_OK)
+//  		if(HAL_QSPI_Transmit(&hqspi, puBuffer, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) == HAL_OK)
+//  			bResult = true;
+
+    if (HAL_QSPI_Command(&hqspi, &command, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) == HAL_OK)
+  		if(HAL_QSPI_Transmit_DMA(&hqspi, puBuffer) == HAL_OK)
+  			bResult = true;
+
+  	if(!bResult)
+      freeQSPI();
+  }
+
+  return bResult;
+}
+
+bool receiveQSPI(QSPI_CommandTypeDef &command, uint8_t *puBuffer)
+{
+  bool bResult = false;
+
+  if(waitQSPI())
+  {
+    g_bQSPIBusy = true;
+
+//  	if (HAL_QSPI_Command(&hqspi, &command, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) == HAL_OK)
+//  		if(HAL_QSPI_Transmit(&hqspi, puBuffer, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) == HAL_OK)
+//  			bResult = true;
+
+    if (HAL_QSPI_Command(&hqspi, &command, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) == HAL_OK)
+  		if(HAL_QSPI_Receive_DMA(&hqspi, puBuffer) == HAL_OK)
+  			bResult = true;
+
+  	if(!bResult)
+      freeQSPI();
+  }
+
+  return bResult;
+}
 
 bool sendSingleQSPI(uint8_t *puBuffer, uint8_t uAddr, uint8_t uLen)
 {
@@ -235,14 +306,7 @@ bool sendSingleQSPI(uint8_t *puBuffer, uint8_t uAddr, uint8_t uLen)
   sCommand.Address					 = uAddr;
   sCommand.NbData       		 = uLen;
 
-
-  if (HAL_QSPI_Command(&hqspi, &sCommand, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
-  	return false;
-
-  if(HAL_QSPI_Transmit(&hqspi, puBuffer, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
-  	return false;
-
-  return true;
+  return(transmitQSPI(sCommand, puBuffer));
 }
 
 bool receiveSingleQSPI(uint8_t *puBuffer, uint8_t uAddr, uint8_t uLen)
@@ -264,14 +328,7 @@ bool receiveSingleQSPI(uint8_t *puBuffer, uint8_t uAddr, uint8_t uLen)
   sCommand.Address					 = uAddr;
   sCommand.NbData       		 = uLen;
 
-
-  if (HAL_QSPI_Command(&hqspi, &sCommand, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
-  	return false;
-
-  if(HAL_QSPI_Receive(&hqspi, puBuffer, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
-  	return false;
-
-  return true;
+  return(receiveQSPI(sCommand, puBuffer));
 }
 
 
@@ -294,14 +351,7 @@ bool sendDoubleQSPI(uint8_t *puBuffer, uint8_t uAddr, uint16_t uLen)
   sCommand.Address					 = uAddr;
   sCommand.NbData       		 = uLen;
 
-
-  if (HAL_QSPI_Command(&hqspi, &sCommand, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
-  	return false;
-
-  if(HAL_QSPI_Transmit(&hqspi, puBuffer, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
-  	return false;
-
-  return true;
+  return(transmitQSPI(sCommand, puBuffer));
 }
 
 bool receiveDoubleQSPI(uint8_t *puBuffer, uint8_t uAddr, uint16_t uLen)
@@ -323,14 +373,7 @@ bool receiveDoubleQSPI(uint8_t *puBuffer, uint8_t uAddr, uint16_t uLen)
   sCommand.Address					 = uAddr;
   sCommand.NbData       		 = uLen;
 
-
-  if (HAL_QSPI_Command(&hqspi, &sCommand, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
-  	return false;
-
-  if(HAL_QSPI_Receive(&hqspi, puBuffer, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
-  	return false;
-
-  return true;
+  return(receiveQSPI(sCommand, puBuffer));
 }
 
 
@@ -342,25 +385,19 @@ bool sendDoubleQSPI16(uint16_t *puBuffer, uint16_t uAddr, uint16_t uLen)
   sCommand.Instruction       = 0x01;
   sCommand.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
   sCommand.DataMode          = QSPI_DATA_2_LINES;
-  sCommand.DummyCycles       = 4;
+  sCommand.DummyCycles       = 0;
   sCommand.DdrMode           = QSPI_DDR_MODE_DISABLE;
   sCommand.DdrHoldHalfCycle  = QSPI_DDR_HHC_ANALOG_DELAY;
   sCommand.SIOOMode          = QSPI_SIOO_INST_EVERY_CMD;
 
   sCommand.AddressMode       = QSPI_ADDRESS_2_LINES;
-  sCommand.AddressSize			 = QSPI_ADDRESS_16_BITS;
+  sCommand.AddressSize			 = QSPI_ADDRESS_24_BITS;
 
-  sCommand.Address					 = uAddr;
+  sCommand.Address					 = uAddr<<8;
   sCommand.NbData       		 = uLen*2;
 
 
-  if (HAL_QSPI_Command(&hqspi, &sCommand, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
-  	return false;
-
-  if(HAL_QSPI_Transmit(&hqspi, (uint8_t *)puBuffer, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
-  	return false;
-
-  return true;
+  return(transmitQSPI(sCommand, (uint8_t *)puBuffer));
 }
 
 bool receiveDoubleQSPI16(uint16_t *puBuffer, uint16_t uAddr, uint16_t uLen)
@@ -383,13 +420,7 @@ bool receiveDoubleQSPI16(uint16_t *puBuffer, uint16_t uAddr, uint16_t uLen)
   sCommand.NbData       		 = uLen*2;
 
 
-  if (HAL_QSPI_Command(&hqspi, &sCommand, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
-  	return false;
-
-  if(HAL_QSPI_Receive(&hqspi, (uint8_t *)puBuffer, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
-  	return false;
-
-  return true;
+  return(receiveQSPI(sCommand, (uint8_t *)puBuffer));
 }
 
 
@@ -401,55 +432,47 @@ bool receiveDoubleQSPI16(uint16_t *puBuffer, uint16_t uAddr, uint16_t uLen)
 uint32_t uTick = 0;
 uint32_t uOldTick = 0;
 
+
 void
 loop(void)
 {
 	static uint32_t uCount = 0;
-	char buffer[16];
-	// uint8_t b = 0;
-
-	// if (err) {
-	// 	status_led_toggle();
-	// 	HAL_Delay(100);
-	// 	if(gpio_ishigh(MODE_BOOT)) {
-	// 		err = 0;
-	// 		status_led_low();
-	// 	}
-	// }
-	// if(err) {
-	// 	error_report(buffer, 16);
-	// 	cdc_puts(buffer);
-	// 	err = 0;
-	// }
-
-	//cdc_puts("Waiting for USB serial\n");
-
-//	uTick = HAL_GetTick();
-//	if(uTick > uOldTick+1000)
-//	{
-//		cdc_puts("Tick changed (1000 ms)\n");
-//		uOldTick = uTick;
-//	}
-
-	//HAL_QSPI_Transmit(hqspi, buffer,1000);
 
   // Send Data
 #define COUNT 4
+#define ADDR  0
+//#define BYTE  1
+
 #define TEST_DOUBLE
 
 #ifdef TEST_DOUBLE
+#ifdef BYTE
+	  uint8_t txData1[COUNT];
+	  uint8_t rxData1[COUNT]	= {0};
 
-  uint16_t txData1[16] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
-  uint16_t rxData1[16]	= {0};
-//  uint16_t txData1[COUNT];
-//  uint16_t rxData1[COUNT]	= {0};
-//
-  if(!sendDoubleQSPI16(txData1, 0x00, COUNT))
+	  if(!sendDoubleQSPI(txData1, 0x00, COUNT))
+	    Error_Handler();
+
+	  if(!receiveDoubleQSPI(rxData1, 0x00, COUNT))
+	    Error_Handler();
+#else
+
+//  uint16_t txData1[16] = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};
+//  uint16_t rxData1[16]	= {0};
+  uint16_t txData1[COUNT] = {1,2,3,4};
+  uint16_t rxData1[COUNT]	= {0};
+//  for(uint32_t u =0; u < COUNT; u++)
+//  	txData1[u]=u;
+
+
+  if(!sendDoubleQSPI16(txData1, ADDR, COUNT))
     Error_Handler();
 
-  if(!receiveDoubleQSPI16(rxData1, 0, COUNT))
+  if(!receiveDoubleQSPI16(rxData1, ADDR, COUNT))
     Error_Handler();
+#endif
 
+  waitQSPI();
 
 //  uint8_t txData1[COUNT];// = {0};//,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
 //  uint8_t rxData1[COUNT]	= {0};
@@ -465,9 +488,13 @@ loop(void)
 
 
   bool bDiff = false;
-  for(int i =0; i < COUNT; i++)
+  for(uint32_t i =0; i < COUNT; i++)
   {
-  	if(txData1[i] != rxData1[i])
+//  	uint32_t uTest = ((4+(i*2))<<8) + (3+(i*2));
+// for 2 inc  	uint32_t uTest = ((8+(i*4))<<8) + (6+(i*4));
+//  	uint32_t uTest = i;
+  	uint32_t uTest = txData1[i];
+  	if(uTest != rxData1[i])
   		bDiff = true;
   }
 
@@ -830,6 +857,57 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
   errors += err ? 1 : 0;
 }
 
+void HAL_QSPI_TxCpltCallback (QSPI_HandleTypeDef *hqspi)
+{
+  UNUSED(hqspi);
+  freeQSPI();
+}
+
+void HAL_QSPI_CmdCpltCallback (QSPI_HandleTypeDef *hqspi)
+{
+  UNUSED(hqspi);
+}
+
+void 	HAL_QSPI_RxCpltCallback (QSPI_HandleTypeDef *hqspi)
+{
+  UNUSED(hqspi);
+  freeQSPI();
+}
+
+void 	HAL_QSPI_RxHalfCpltCallback (QSPI_HandleTypeDef *hqspi)
+{
+  UNUSED(hqspi);
+
+}
+
+void 	HAL_QSPI_TxHalfCpltCallback (QSPI_HandleTypeDef *hqspi)
+{
+  UNUSED(hqspi);
+
+}
+
+void 	HAL_QSPI_FifoThresholdCallback (QSPI_HandleTypeDef *hqspi)
+{
+  UNUSED(hqspi);
+
+}
+
+void 	HAL_QSPI_StatusMatchCallback (QSPI_HandleTypeDef *hqspi)
+{
+  UNUSED(hqspi);
+}
+
+void 	HAL_QSPI_TimeOutCallback (QSPI_HandleTypeDef *hqspi)
+{
+  UNUSED(hqspi);
+  freeQSPI();
+}
+
+void 	HAL_QSPI_ErrorCallback (QSPI_HandleTypeDef *hqspi)
+{
+  UNUSED(hqspi);
+  freeQSPI();
+}
 
 /**
   * @brief UART error callbacks
