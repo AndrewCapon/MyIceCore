@@ -1,0 +1,73 @@
+{
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // for the documentation about the tasks.json format
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "make",
+      "type": "shell",
+      "command": "make",
+      "presentation": {
+        "clear": true                        // <-- this line
+      },
+      "problemMatcher":
+      [
+        {
+          "owner": "spinalHdl",
+          "fileLocation": ["absolute"],
+          "pattern": {
+              "regexp": "^(\\[error\\] )(.*):(\\d+):(\\d+):\\s+(.*)$",
+              "file": 2,
+              "line": 3,
+              "column": 4,
+              "severity": 1,
+              "message": 5
+          }
+        },
+        {
+          "owner": "v",
+          "fileLocation": ["relative", "${workspaceFolder}"],
+          "pattern": {
+              "regexp": "^(Warning:)\\s+(.*)$",
+              "severity": 1,
+              "message": 2
+          }
+        },
+        {
+          "owner": "v",
+          "fileLocation": ["relative", "${workspaceFolder}"],
+          "pattern": {
+              "regexp": "^(.*):(\\d+):\\s+(Warning|ERROR|fatal error):\\s+(.*)$",
+              "file": 1,
+              "line": 2,
+              "severity": 3,
+              "message": 4
+          }
+        },
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    }
+    ,
+    {
+      "label": "upload",
+      "type": "shell",
+      "command": "make upload",
+    }
+    ,
+    {
+      "label": "simulate",
+      "type": "shell",
+      "command": "sbt \"runMain mylib.MyTopLevelSim\"",
+      "presentation": {
+        "clear": true                        // <-- this line
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      }
+    }
+  ]
+}
