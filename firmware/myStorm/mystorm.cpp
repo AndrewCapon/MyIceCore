@@ -391,9 +391,9 @@ bool sendDoubleQSPI16(uint16_t *puBuffer, uint16_t uAddr, uint16_t uLen)
   sCommand.SIOOMode          = QSPI_SIOO_INST_EVERY_CMD;
 
   sCommand.AddressMode       = QSPI_ADDRESS_2_LINES;
-  sCommand.AddressSize			 = QSPI_ADDRESS_24_BITS;
+  sCommand.AddressSize			 = QSPI_ADDRESS_16_BITS;
 
-  sCommand.Address					 = uAddr<<8;
+  sCommand.Address					 = uAddr;
   sCommand.NbData       		 = uLen*2;
 
 
@@ -408,7 +408,7 @@ bool receiveDoubleQSPI16(uint16_t *puBuffer, uint16_t uAddr, uint16_t uLen)
   sCommand.Instruction       = 0x02;
   sCommand.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
   sCommand.DataMode          = QSPI_DATA_2_LINES;
-  sCommand.DummyCycles       = 4;
+  sCommand.DummyCycles       = 8;
   sCommand.DdrMode           = QSPI_DDR_MODE_DISABLE;
   sCommand.DdrHoldHalfCycle  = QSPI_DDR_HHC_ANALOG_DELAY;
   sCommand.SIOOMode          = QSPI_SIOO_INST_EVERY_CMD;
@@ -440,7 +440,7 @@ loop(void)
 
   // Send Data
 #define COUNT 4
-#define ADDR  0
+#define ADDR  0xffff
 //#define BYTE  1
 
 #define TEST_DOUBLE
@@ -459,7 +459,7 @@ loop(void)
 
 //  uint16_t txData1[16] = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};
 //  uint16_t rxData1[16]	= {0};
-  uint16_t txData1[COUNT] = {1,2,3,4};
+  uint16_t txData1[COUNT] = {0x0102,0x0304,0x0506,0x0708};
   uint16_t rxData1[COUNT]	= {0};
 //  for(uint32_t u =0; u < COUNT; u++)
 //  	txData1[u]=u;

@@ -22,9 +22,12 @@ begin
 end
 endmodule
  
-`define DEBUG
+//`define DEBUG
+//`define USE_SPINAL_HDL
+
 `ifdef DEBUG
 //debug version here down
+
 module chip (
     // 25Hz clock input
     input  clk,
@@ -112,7 +115,8 @@ module chip (
     .D_OUT_0(io_qd_write),
     .D_IN_0(io_qd_read)
   );
-
+ 
+`ifdef USE_SPINAL_HDL
   MyTopLevel top_level (
     .io_leds(led),
     .io_qd_read(io_qd_read),
@@ -138,6 +142,32 @@ module chip (
 
     .reset(rst),
   );
+`else // not USE_SPINAL_HDL
+  QSPIMemoryV top_level( 
+    .QD_READ(io_qd_read),
+    .QD_WRITE(io_qd_write),
+    .QD_WRITE_ENABLE(io_qd_writeEnable),
+
+    .SS(dcs),
+    .SCLK(dsck),
+
+    .CLK(useClk),
+    .RST(rst),
+
+    .LEDS(led),
+    .DBG_IO0(prb04), 
+    .DBG_IO1(prb05),
+    .DBG_SS(prb06),
+    .DBG_SCLK(prb07),
+    
+    .DBG_1(prb00),
+    .DBG_2(prb01),
+    .DBG_3(prb02),
+    .DBG_4(prb03),
+
+    .DBG_BYTE({prb08, prb09, prb10, prb11, prb12, prb13, prb14, prb15})
+  );
+`endif
 
 `else // not DEBUG
 
@@ -158,7 +188,7 @@ module chip (
   wire clk275;
   wire clk200;
   wire clk100;
-  wire clk95;
+  wire clk80;
   wire locked;
   
   reg rst;
@@ -173,9 +203,9 @@ module chip (
     end
   end
 
-  pll95 clock_95 (
+  pll80 clock_80 (
     .clock_in(clk),
-    .clock_out(clk95),
+    .clock_out(clk80),
     .locked(locked)
   );
 
@@ -191,7 +221,7 @@ module chip (
   //   .out_clk(clk100)
   // ); 
        
-  wire useClk = clk;
+  wire useClk = clk80;
 
   assign led = 'hf;
    
@@ -206,7 +236,7 @@ module chip (
     .D_OUT_0(io_qd_write),
     .D_IN_0(io_qd_read)
   );
-
+`ifdef USE_SPINAL_HDL
   MyTopLevel top_level (
     .io_qd_read(io_qd_read),
     .io_qd_write(io_qd_write),
@@ -216,7 +246,20 @@ module chip (
     .clk(useClk),
     .reset(rst),
   );
+`else
+  QSPIMemoryV top_level( 
+    .QD_READ(io_qd_read),
+    .QD_WRITE(io_qd_write),
+    .QD_WRITE_ENABLE(io_qd_writeEnable),
 
+    .SS(dcs),
+    .SCLK(dsck),
+
+    .CLK(useClk),
+    .RST(rst)
+  );
+
+`endif
 `endif // DEBUG
 
 
